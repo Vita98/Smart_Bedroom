@@ -1,0 +1,6 @@
+framework module Pods_BedroomProject {
+  umbrella header "Pods-BedroomProject-umbrella.h"
+
+  export *
+  module * { export * }
+}
