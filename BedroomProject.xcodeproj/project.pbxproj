@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		010B3FC622DE7D1C008304E7 /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 010B3FC522DE7D1C008304E7 /* LoadingView.swift */; };
-		010DEE6922DA38DD00BD601D /* ImageDarknessExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 010DEE6822DA38DC00BD601D /* ImageDarknessExtension.swift */; };
+		010DEE6922DA38DD00BD601D /* ImageExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 010DEE6822DA38DC00BD601D /* ImageExtensions.swift */; };
 		010DEE6D22DA426400BD601D /* Notification.swift in Sources */ = {isa = PBXBuildFile; fileRef = 010DEE6C22DA426400BD601D /* Notification.swift */; };
 		01149E98236AD3FF005F9E8C /* Protocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01149E97236AD3FF005F9E8C /* Protocol.swift */; };
 		0116247B231547C9008E7172 /* UIButtonExtensionisHiglighted.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0116247A231547C9008E7172 /* UIButtonExtensionisHiglighted.swift */; };
@@ -18,7 +18,7 @@
 		011FD4292312E23D005BF5BE /* WIFIModuleConnectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 011FD4282312E23D005BF5BE /* WIFIModuleConnectionManager.swift */; };
 		0127315E230F53E400B620CF /* SharedData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0127315D230F53E400B620CF /* SharedData.swift */; };
 		01273160230F595E00B620CF /* ConnectionStatusUIView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0127315F230F595E00B620CF /* ConnectionStatusUIView.swift */; };
-		012C0A5C240AF54E006C27BA /* BackgroundImageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 012C0A5B240AF54E006C27BA /* BackgroundImageManager.swift */; };
+		0146E7B525F3D2A200FE40B5 /* SettingsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0146E7B425F3D2A200FE40B5 /* SettingsManager.swift */; };
 		014728D622E4E3B100D2C01A /* RegularBedroomSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 014728D522E4E3B100D2C01A /* RegularBedroomSectionView.swift */; };
 		0148601722C3800E003A4BF5 /* ViewController + NavBarExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0148601622C3800E003A4BF5 /* ViewController + NavBarExtension.swift */; };
 		01558EDE24DFFB3900626070 /* SectionChoserPageViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01558EDD24DFFB3900626070 /* SectionChoserPageViewController.swift */; };
@@ -67,7 +67,7 @@
 /* Begin PBXFileReference section */
 		0101ABF92402ED9D008F1F69 /* NotificationCenter.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = NotificationCenter.framework; path = System/Library/Frameworks/NotificationCenter.framework; sourceTree = SDKROOT; };
 		010B3FC522DE7D1C008304E7 /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
-		010DEE6822DA38DC00BD601D /* ImageDarknessExtension.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImageDarknessExtension.swift; sourceTree = "<group>"; };
+		010DEE6822DA38DC00BD601D /* ImageExtensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImageExtensions.swift; sourceTree = "<group>"; };
 		010DEE6C22DA426400BD601D /* Notification.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notification.swift; sourceTree = "<group>"; };
 		01149E97236AD3FF005F9E8C /* Protocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Protocol.swift; sourceTree = "<group>"; };
 		0116247A231547C9008E7172 /* UIButtonExtensionisHiglighted.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIButtonExtensionisHiglighted.swift; sourceTree = "<group>"; };
@@ -77,8 +77,8 @@
 		011FD4282312E23D005BF5BE /* WIFIModuleConnectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WIFIModuleConnectionManager.swift; sourceTree = "<group>"; };
 		0127315D230F53E400B620CF /* SharedData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedData.swift; sourceTree = "<group>"; };
 		0127315F230F595E00B620CF /* ConnectionStatusUIView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionStatusUIView.swift; sourceTree = "<group>"; };
-		012C0A5B240AF54E006C27BA /* BackgroundImageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundImageManager.swift; sourceTree = "<group>"; };
 		013FA4962401F5310010CF35 /* BedroomProject.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BedroomProject.entitlements; sourceTree = "<group>"; };
+		0146E7B425F3D2A200FE40B5 /* SettingsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsManager.swift; sourceTree = "<group>"; };
 		014728D522E4E3B100D2C01A /* RegularBedroomSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegularBedroomSectionView.swift; sourceTree = "<group>"; };
 		0148601622C3800E003A4BF5 /* ViewController + NavBarExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ViewController + NavBarExtension.swift"; sourceTree = "<group>"; };
 		01558EDD24DFFB3900626070 /* SectionChoserPageViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionChoserPageViewController.swift; sourceTree = "<group>"; };
@@ -144,7 +144,7 @@
 			children = (
 				01196A4D2322673A0025369B /* UINavigationTransition */,
 				0196278122D009470018DA19 /* CGSizeExtension.swift */,
-				010DEE6822DA38DC00BD601D /* ImageDarknessExtension.swift */,
+				010DEE6822DA38DC00BD601D /* ImageExtensions.swift */,
 				0116247A231547C9008E7172 /* UIButtonExtensionisHiglighted.swift */,
 				0148601622C3800E003A4BF5 /* ViewController + NavBarExtension.swift */,
 			);
@@ -177,7 +177,7 @@
 				01729C7723F7602600A023EA /* TCP Connection */,
 				01BC217222CEA38B00433160 /* SectionChooser */,
 				01BC217722CEB5FF00433160 /* CollectionViewController */,
-				012C0A5B240AF54E006C27BA /* BackgroundImageManager.swift */,
+				0146E7B425F3D2A200FE40B5 /* SettingsManager.swift */,
 			);
 			path = Controller;
 			sourceTree = "<group>";
@@ -450,11 +450,10 @@
 			files = (
 				0116247B231547C9008E7172 /* UIButtonExtensionisHiglighted.swift in Sources */,
 				016F710223B376730048465C /* OPCode.swift in Sources */,
-				010DEE6922DA38DD00BD601D /* ImageDarknessExtension.swift in Sources */,
+				010DEE6922DA38DD00BD601D /* ImageExtensions.swift in Sources */,
 				019E38AC241123950056E877 /* OtherViewController.swift in Sources */,
 				015FB7B022C3565C008BD61B /* ViewController.swift in Sources */,
 				01DD43FA25E82C330014BED5 /* Socket.swift in Sources */,
-				012C0A5C240AF54E006C27BA /* BackgroundImageManager.swift in Sources */,
 				01BC217622CEA3B800433160 /* SecondPageViewController.swift in Sources */,
 				010B3FC622DE7D1C008304E7 /* LoadingView.swift in Sources */,
 				01B7514B22E266EA00DF49DB /* IrregularBedroomSectionView.swift in Sources */,
@@ -462,6 +461,7 @@
 				01BC218022CEBD5C00433160 /* DataModel.swift in Sources */,
 				01A5F7A124111B2D0083F7F3 /* SuperViewController.swift in Sources */,
 				01BC217D22CEB64400433160 /* AllCollectionViewCell.swift in Sources */,
+				0146E7B525F3D2A200FE40B5 /* SettingsManager.swift in Sources */,
 				011FD4292312E23D005BF5BE /* WIFIModuleConnectionManager.swift in Sources */,
 				015FB7AE22C3565C008BD61B /* AppDelegate.swift in Sources */,
 				0148601722C3800E003A4BF5 /* ViewController + NavBarExtension.swift in Sources */,

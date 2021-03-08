@@ -72,7 +72,13 @@ public class LoadingView : UIVisualEffectView{
             self.alpha = 0
             
             //Adding the loading view always on top of all view
-            UIApplication.shared.keyWindow?.addSubview(self)
+            let keyWindow = UIApplication.shared.connectedScenes
+                    .filter({$0.activationState == .foregroundActive})
+                    .map({$0 as? UIWindowScene})
+                    .compactMap({$0})
+                    .first?.windows
+                    .filter({$0.isKeyWindow}).first
+            keyWindow?.addSubview(self)
             
             if animated {
                 UIView.animate(withDuration: 0.6) { self.alpha = 1 }

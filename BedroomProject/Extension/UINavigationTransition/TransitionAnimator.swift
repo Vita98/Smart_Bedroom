@@ -37,7 +37,7 @@ final class TransitionAnimator : NSObject, UIViewControllerAnimatedTransitioning
             
             let container = transitionContext.containerView
             container.addSubview(toViewController.view)
-            
+            toViewController.blurEffectView.effect = .none
             
             toViewController.view.frame = CGRect(x: toViewController.view.frame.width, y: 0, width: toViewController.view.frame.width, height: toViewController.view.frame.height)
             
@@ -53,7 +53,8 @@ final class TransitionAnimator : NSObject, UIViewControllerAnimatedTransitioning
                 container.addSubview(toViewController.view)
                 
                 //Passing the background image also to the destination controller
-                toViewController.backgroundView.image = fromViewController.backgroundView.image
+                toViewController.imageView.image = fromViewController.imageView.image
+                toViewController.blurEffectView.effect = toViewController.defaultBlurEffect
                 
                 //Sliding back the background
                 fromViewController.backgroundView.frame = CGRect(x: 0, y: 0, width: fromViewController.view.frame.width, height: fromViewController.view.frame.height)
@@ -72,7 +73,8 @@ final class TransitionAnimator : NSObject, UIViewControllerAnimatedTransitioning
             toViewController.backgroundView.frame = CGRect(x: toViewController.backgroundView.frame.width, y: 0, width: toViewController.backgroundView.frame.width, height: toViewController.backgroundView.frame.height)
             
             //Removing the background image from the destination controller
-            fromViewController.backgroundView.image = nil
+            fromViewController.imageView.image = nil
+            fromViewController.blurEffectView.effect = .none
             
             UIView.animate(withDuration: duration, animations: {
                 fromViewController.view.frame = CGRect(x: fromViewController.view.frame.width, y: 0, width: fromViewController.view.frame.width, height: fromViewController.view.frame.height)
@@ -82,7 +84,8 @@ final class TransitionAnimator : NSObject, UIViewControllerAnimatedTransitioning
             }) { (flag) in
                 container.addSubview(toViewController.view)
                 transitionContext.completeTransition(!transitionContext.transitionWasCancelled)
-                fromViewController.backgroundView.image = toViewController.backgroundView.image
+                fromViewController.imageView.image = toViewController.imageView.image
+                fromViewController.blurEffectView.effect = fromViewController.defaultBlurEffect
             }
             
         }

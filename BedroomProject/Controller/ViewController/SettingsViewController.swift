@@ -15,6 +15,9 @@ class SettingsViewController: SuperViewController {
     @IBOutlet weak var singleClickLabel: UILabel!
     @IBOutlet weak var longClickLabel: UILabel!
     @IBOutlet weak var stairLabel: UILabel!
+    @IBOutlet weak var backgroundLabel: UILabel!
+    @IBOutlet weak var shareBackgroundLabel: UILabel!
+    @IBOutlet weak var downloadRandomBackgroundLabel: UILabel!
     
     @IBOutlet weak var singleClickComponentContainer: UIView!
     @IBOutlet weak var longClickComponentContainer: UIView!
@@ -23,6 +26,7 @@ class SettingsViewController: SuperViewController {
     @IBOutlet weak var singleClickSwitch: UISwitch!
     @IBOutlet weak var longClickSwitch: UISwitch!
     @IBOutlet weak var generalEnablerSwitch: UISwitch!
+    @IBOutlet weak var randomBakgroundSwitch: UISwitch!
     
     private var customElasticSlider : UIElasticSlider?
     
@@ -38,6 +42,9 @@ class SettingsViewController: SuperViewController {
         // Do any additional setup after loading the view.
         configureClickSection()
         configureElesticSlider()
+        
+        //Configuring the random background switch
+        randomBakgroundSwitch.isOn = SettingsManager.sharedInstance.randomBackgroundProperty
         
         setInitialStatusValues()
         
@@ -167,7 +174,23 @@ class SettingsViewController: SuperViewController {
             WIFIModuleConnectionManager.sharedInstance.sendLongPressionWallButtonCommand()
         }
     }
-
+    
+    @IBAction func ClickShareBackground(_ sender: Any) {
+        let image = SettingsManager.sharedInstance.backgroundImage
+        if let img = image{
+            let vc = UIActivityViewController(activityItems: [img], applicationActivities: [])
+            present(vc, animated: true)
+        }
+    }
+    
+    @IBAction func ClickSwitchRandomBackground(_ sender: Any) {
+        if randomBakgroundSwitch.isOn{
+            SettingsManager.sharedInstance.randomBackgroundProperty = true
+        }else {
+            SettingsManager.sharedInstance.randomBackgroundProperty = false
+        }
+        
+    }
 }
 
 extension SettingsViewController : ThemeDelegate {
@@ -177,6 +200,9 @@ extension SettingsViewController : ThemeDelegate {
         stairLabel.textColor = .black
         singleClickLabel.textColor = .black
         longClickLabel.textColor = .black
+        shareBackgroundLabel.textColor = .black
+        backgroundLabel.textColor = .black
+        downloadRandomBackgroundLabel.textColor = .black
         if let slider = customElasticSlider { slider.changeColorTheme(with: .Dark)}
         self.navigationController?.navigationBar.titleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.black]
     }
@@ -187,6 +213,9 @@ extension SettingsViewController : ThemeDelegate {
         stairLabel.textColor = .white
         singleClickLabel.textColor = .white
         longClickLabel.textColor = .white
+        shareBackgroundLabel.textColor = .white
+        backgroundLabel.textColor = .white
+        downloadRandomBackgroundLabel.textColor = .white
         if let slider = customElasticSlider { slider.changeColorTheme(with: .Light)}
         self.navigationController?.navigationBar.titleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.white]
     }

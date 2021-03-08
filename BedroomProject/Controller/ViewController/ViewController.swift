@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import Photos
 
 class ViewController: SuperViewController {
     
@@ -51,7 +52,16 @@ class ViewController: SuperViewController {
         setSwipeDownWithTwoFingersRecognizer()
         
         super.setBackgroundView()
-        setBackgroundImage()
+        
+        //Setting the stored image, if there is one
+        if let oldBackground = SettingsManager.sharedInstance.backgroundImage {
+            let se = self as SuperViewController
+            se.imageView.image = oldBackground
+        }
+        
+        if SettingsManager.sharedInstance.randomBackgroundProperty{
+            setBackgroundImage()
+        }
         
         setConnectionStatusIndicator()
         
@@ -59,6 +69,25 @@ class ViewController: SuperViewController {
         WIFIModuleConnectionManager.sharedInstance.delegate = self
         
         self.navigationController?.addCustomTransitioning()
+        
+        PHPhotoLibrary.requestAuthorization { (auth) in
+            switch auth {
+            case .authorized:
+                print("Authorized")
+            case .denied:
+                print("Denied")
+            case .limited:
+                print("Limited")
+            case .notDetermined:
+                print("Not determined")
+            case .restricted:
+                print("Resctricted")
+            @unknown default:
+                print("Default")
+            }
+        }
+        
+        
         
     }
     
@@ -115,12 +144,7 @@ class ViewController: SuperViewController {
     
     private func setBackgroundImage(){
         
-        //Setting the stored image, if there is one
-        if let oldBackground = BackgroundImageManager.sharedInstance.getSavedBackgroundImage(){
-            self.backgroundView.image = oldBackground
-        }
-        
-        let urlString = "https://picsum.photos/\(Int(UIScreen.main.bounds.width))/\(Int(UIScreen.main.bounds.height))?blur=10"
+        let urlString = "https://picsum.photos/\(Int(UIScreen.main.bounds.width))/\(Int(UIScreen.main.bounds.height))"
         let catPictureURL = URL(string: urlString)!
         
         let session = URLSession(configuration: .default)
@@ -147,7 +171,7 @@ class ViewController: SuperViewController {
                                 
                                 //Showing with fade animation the new downloaded background image
                                 self.changeBackground(withNewImage: image!, withFade: true)
-                                BackgroundImageManager.sharedInstance.updateBackgroundImage(newBackground: image!)
+                                SettingsManager.sharedInstance.backgroundImage = image!
                                 
                                 self.setViewColorTheme(colorTheme: image!.isDark ? .Light : .Dark)
                                 //LoadingView.sharedInstance.hide(self.identifier, isAnimated: true)

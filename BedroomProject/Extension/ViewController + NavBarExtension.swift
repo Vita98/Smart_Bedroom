@@ -69,19 +69,4 @@ extension ViewController {
             }
         }
     }
-    
-}
-
-extension UIImageView {
-    
-    func getImageName() -> String? {
-        
-        if let image = self.image, let imageName = image.accessibilityIdentifier {
-            return imageName
-        } else {
-            return nil
-        }
-        
-    }
-    
 }
