@@ -55,8 +55,8 @@ class ViewController: SuperViewController {
         
         //Setting the stored image, if there is one
         if let oldBackground = SettingsManager.sharedInstance.backgroundImage {
-            let se = self as SuperViewController
-            se.imageView.image = oldBackground
+            self.imageView.image = oldBackground
+            self.setViewColorTheme(colorTheme: self.imageView.image!.isDark ? .Light : .Dark)
         }
         
         if SettingsManager.sharedInstance.randomBackgroundProperty{
@@ -87,8 +87,13 @@ class ViewController: SuperViewController {
             }
         }
         
-        
-        
+        //Checking if the WifiManager singletone is already into the setup status
+        if WIFIModuleConnectionManager.sharedInstance.connectionStatus == .setup {
+            //Showing the loading view
+            DispatchQueue.main.sync {
+                LoadingView.sharedInstance.show(self.identifier, isAnimated: false)
+            }
+        }
     }
     
     

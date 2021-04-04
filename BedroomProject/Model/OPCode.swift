@@ -16,6 +16,7 @@ public enum NormalStatusOPCode : String {
     case FIRSTCLICKWALLBUTTON = "1KWBUT"
     case STAIR = "STAIRS"
     case SETUP = "SETUPP"
+    case MOVEMENTSENSOR = "MOVSEN"
 }
 
 public enum SetupStatusOPCode : String {
@@ -29,4 +30,5 @@ public enum SetupConfigurationOPCode : String {
     case WALLBUTTON = "WBUTTO"
     case LONGPRESSIONBUTTON = "LONPRE"
     case FIRSTCLICKWALLBUTTON = "1KWBUT"
+    case MOVEMENTSENSOR = "MOVSEN"
 }

@@ -28,11 +28,13 @@ var BedroomSelectedSections : [Int : Bool] = [0:true,1:true,2:true,3:true]
 
 var singleClickWallButtonID : Int = 6
 var longClickWallButtonID : Int = 6
+var movementSensorClickButtonID : Int = 6
 
 var isWallButtonEnabled = true
 
 var isSingleClickWallEnabled = true
 var isLongClickWallEnabled = true
+var isMovementSensorClickEnabled = true
 
 
 

@@ -18,8 +18,9 @@ protocol ButtonPressedDelegate {
     func buttonPressed(_ button : RemoteButtonIndex);
 }
 
-protocol ButtonClickSelectedDelegate {
+protocol ClickSelectionCollectionViewDelegate {
     func buttonSelected(_ button : RemoteButtonIndex, _ container : UIView)
+    func switchStatusChanged(_ status : Bool, _ container : UIView)
 }
 
 protocol UiElasticSliderDelegate {

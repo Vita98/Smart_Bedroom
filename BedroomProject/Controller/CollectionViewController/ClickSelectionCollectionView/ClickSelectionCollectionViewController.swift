@@ -36,7 +36,9 @@ class ClickSelectionCollectionViewController: UICollectionViewController, UIColl
         case hiding
     }
     
-    public var buttonClickSelectedDelegate : ButtonClickSelectedDelegate?
+    public var delegate : ClickSelectionCollectionViewDelegate?
+    
+    public var collectionViewEnablingAnimation : Bool = true
     
 
     override func viewDidLoad() {
@@ -44,12 +46,13 @@ class ClickSelectionCollectionViewController: UICollectionViewController, UIColl
 
         // Uncomment the following line to preserve selection between presentations
         // self.clearsSelectionOnViewWillAppear = false
-
-        // Do any additional setup after loading the view.
     }
     
     convenience init(withIndexButtonSelected buttonSelectedIndex : Int, withContainer container : UIView, withSwitchController switchController: UISwitch) {
         self.init(withContainer: container, withSwitchController: switchController)
+        
+        //Adding the listener to the switch status change
+        switchController.addTarget(self, action: #selector(switchValueChanged), for: .valueChanged)
         
         //Call the function to scroll in the position of the selected item
         scrollCollectionView(toButton: buttonSelectedIndex, animated: false)
@@ -80,6 +83,20 @@ class ClickSelectionCollectionViewController: UICollectionViewController, UIColl
         fatalError("init(coder:) has not been implemented")
     }
     
+    @objc private func switchValueChanged(){
+        if switchController.isOn{
+            enableCollectionView(animation: collectionViewEnablingAnimation)
+            if let del = delegate{
+                del.switchStatusChanged(true, container)
+            }
+        }else{
+            disableCollectionView(animation: collectionViewEnablingAnimation)
+            if let del = delegate{
+                del.switchStatusChanged(false, container)
+            }
+        }
+    }
+    
     public func scrollCollectionView(toButton buttonSelectedIndex : Int, animated : Bool){
         
         //Getting the position of the new selected button inside the ALL_COLLECTION_VIEW_BUTTON array
@@ -97,12 +114,10 @@ class ClickSelectionCollectionViewController: UICollectionViewController, UIColl
             self.collectionView.delegate = self
             self.collectionView.reloadData()
             self.collectionView.layoutIfNeeded()
-            
             self.collectionView.scrollToItem(at: newButtonIndexPath, at: .centeredHorizontally, animated: animated)
         }
-        
-        
     }
+    
     
 
     override func numberOfSections(in collectionView: UICollectionView) -> Int {
@@ -214,7 +229,7 @@ extension ClickSelectionCollectionViewController : ClickSelectionCollectionViewC
         oldCellSelectdID = actualCellSelectedID
         actualCellSelectedID = cellTapped.iconView.accessibilityIdentifier ?? ""
         
-        if let selectdDelegate = buttonClickSelectedDelegate, let button = Int(actualCellSelectedID){
+        if let selectdDelegate = delegate, let button = Int(actualCellSelectedID){
             selectdDelegate.buttonSelected(button, container)
         }
         

@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import os
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -32,7 +33,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func applicationWillEnterForeground(_ application: UIApplication) {
         // Called as part of the transition from the background to the active state; here you can undo many of the changes made on entering the background.
         //Notification used to inform the Connection manager
+        print("RETURN FROM BACKGROUND")
         NotificationCenter.default.post(name: backFromBackgroundNotificationName, object: nil)
+        WIFIModuleConnectionManager.sharedInstance.fireTimer()
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {

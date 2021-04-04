@@ -18,20 +18,25 @@ class SettingsViewController: SuperViewController {
     @IBOutlet weak var backgroundLabel: UILabel!
     @IBOutlet weak var shareBackgroundLabel: UILabel!
     @IBOutlet weak var downloadRandomBackgroundLabel: UILabel!
+    @IBOutlet weak var movementSensorEnabledLabel: UILabel!
+    @IBOutlet weak var movementSensorLabel: UILabel!
     
     @IBOutlet weak var singleClickComponentContainer: UIView!
     @IBOutlet weak var longClickComponentContainer: UIView!
     @IBOutlet weak var stairComponentContainer: UIView!
+    @IBOutlet weak var movementSensorClickComponentContainer: UIView!
     
     @IBOutlet weak var singleClickSwitch: UISwitch!
     @IBOutlet weak var longClickSwitch: UISwitch!
     @IBOutlet weak var generalEnablerSwitch: UISwitch!
     @IBOutlet weak var randomBakgroundSwitch: UISwitch!
+    @IBOutlet weak var movementSensorClickSwitch: UISwitch!
     
     private var customElasticSlider : UIElasticSlider?
     
     private var singleClickCollectionViewController : ClickSelectionCollectionViewController!
     private var longClickCollectionViewController : ClickSelectionCollectionViewController!
+    private var movementSensorClickCollectionViewController : ClickSelectionCollectionViewController!
     
     
     override func viewDidLoad() {
@@ -42,6 +47,7 @@ class SettingsViewController: SuperViewController {
         // Do any additional setup after loading the view.
         configureClickSection()
         configureElesticSlider()
+        configureSensorSection()
         
         //Configuring the random background switch
         randomBakgroundSwitch.isOn = SettingsManager.sharedInstance.randomBackgroundProperty
@@ -51,8 +57,9 @@ class SettingsViewController: SuperViewController {
         if appColorTheme == .Dark{ setDarkTheme() }
         else { setLightTheme() }
         
-        singleClickCollectionViewController.buttonClickSelectedDelegate = self
-        longClickCollectionViewController.buttonClickSelectedDelegate = self
+        singleClickCollectionViewController.delegate = self
+        longClickCollectionViewController.delegate = self
+        movementSensorClickCollectionViewController.delegate = self
         
         //Notification observer for the theme color change
         NotificationCenter.default.addObserver(self, selector: #selector(setDarkTheme), name: lightThemeSelectedNotificationName, object: nil)
@@ -62,6 +69,19 @@ class SettingsViewController: SuperViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(setupCompletedActions), name: setupCompletedNotificationName, object: nil)
     }
     
+    private func configureSensorSection(){
+        
+        //Configuring the collection view for the movement sensor
+        movementSensorClickCollectionViewController = ClickSelectionCollectionViewController(withIndexButtonSelected: movementSensorClickButtonID, withContainer: movementSensorClickComponentContainer, withSwitchController: movementSensorClickSwitch)
+        
+        movementSensorClickComponentContainer.insertSubview(movementSensorClickCollectionViewController.collectionView, belowSubview: movementSensorClickSwitch)
+        
+        movementSensorClickCollectionViewController.collectionView.translatesAutoresizingMaskIntoConstraints = false
+        movementSensorClickCollectionViewController.collectionView.topAnchor.constraint(equalTo: movementSensorEnabledLabel.bottomAnchor, constant: 5).isActive = true
+        movementSensorClickCollectionViewController.collectionView.leadingAnchor.constraint(equalTo: movementSensorClickComponentContainer.leadingAnchor, constant: 0).isActive = true
+        movementSensorClickCollectionViewController.collectionView.trailingAnchor.constraint(equalTo: movementSensorClickComponentContainer.trailingAnchor, constant: 0).isActive = true
+        movementSensorClickCollectionViewController.collectionView.bottomAnchor.constraint(equalTo: movementSensorClickComponentContainer.bottomAnchor, constant: -5).isActive = true
+    }
     
     private func configureClickSection(){
         
@@ -101,8 +121,6 @@ class SettingsViewController: SuperViewController {
         slider.delegate = self
         
         customElasticSlider = slider
-        
-        
     }
     
     private func setInitialStatusValues(){
@@ -125,6 +143,11 @@ class SettingsViewController: SuperViewController {
                 self.singleClickCollectionViewController.disableAllContainer(animation: true)
                 self.longClickCollectionViewController.disableAllContainer(animation: true)
             }
+            
+            if !isMovementSensorClickEnabled{
+                self.movementSensorClickSwitch.setOn(false, animated: true)
+                self.movementSensorClickCollectionViewController.disableCollectionView(animation: false)
+            }
         }
         
     }
@@ -144,34 +167,6 @@ class SettingsViewController: SuperViewController {
             
             isWallButtonEnabled = false
             WIFIModuleConnectionManager.sharedInstance.sendWButtonCommand()
-        }
-    }
-    
-    @IBAction func singleClickSwitchValueChanged(_ sender: Any) {
-        if singleClickSwitch.isOn{
-            singleClickCollectionViewController.enableCollectionView(animation: true)
-            
-            isSingleClickWallEnabled = true
-            WIFIModuleConnectionManager.sharedInstance.sendSingleClickWallButtonCommand()
-        }else {
-            singleClickCollectionViewController.disableCollectionView(animation: true)
-            
-            isSingleClickWallEnabled = false
-            WIFIModuleConnectionManager.sharedInstance.sendSingleClickWallButtonCommand()
-        }
-    }
-    
-    @IBAction func ClickSwitchValueChanged(_ sender: Any) {
-        if longClickSwitch.isOn{
-            longClickCollectionViewController.enableCollectionView(animation: true)
-            
-            isLongClickWallEnabled = true
-            WIFIModuleConnectionManager.sharedInstance.sendLongPressionWallButtonCommand()
-        }else {
-            longClickCollectionViewController.disableCollectionView(animation: true)
-            
-            isLongClickWallEnabled = false
-            WIFIModuleConnectionManager.sharedInstance.sendLongPressionWallButtonCommand()
         }
     }
     
@@ -203,6 +198,8 @@ extension SettingsViewController : ThemeDelegate {
         shareBackgroundLabel.textColor = .black
         backgroundLabel.textColor = .black
         downloadRandomBackgroundLabel.textColor = .black
+        movementSensorEnabledLabel.textColor = .black
+        movementSensorLabel.textColor = .black
         if let slider = customElasticSlider { slider.changeColorTheme(with: .Dark)}
         self.navigationController?.navigationBar.titleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.black]
     }
@@ -216,6 +213,8 @@ extension SettingsViewController : ThemeDelegate {
         shareBackgroundLabel.textColor = .white
         backgroundLabel.textColor = .white
         downloadRandomBackgroundLabel.textColor = .white
+        movementSensorEnabledLabel.textColor = .white
+        movementSensorLabel.textColor = .white
         if let slider = customElasticSlider { slider.changeColorTheme(with: .Light)}
         self.navigationController?.navigationBar.titleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.white]
     }
@@ -232,10 +231,26 @@ extension SettingsViewController {
         //Scrolling the collections view on the new selected item
         singleClickCollectionViewController.scrollCollectionView(toButton: singleClickWallButtonID, animated: true)
         longClickCollectionViewController.scrollCollectionView(toButton: longClickWallButtonID, animated: true)
+        movementSensorClickCollectionViewController.scrollCollectionView(toButton: movementSensorClickButtonID, animated: true)
     }
 }
 
-extension SettingsViewController : ButtonClickSelectedDelegate {
+extension SettingsViewController : ClickSelectionCollectionViewDelegate {
+    func switchStatusChanged(_ status: Bool, _ container: UIView) {
+        switch container {
+        case singleClickComponentContainer:
+            isSingleClickWallEnabled = status
+            WIFIModuleConnectionManager.sharedInstance.sendSingleClickWallButtonCommand()
+        case longClickComponentContainer:
+            isLongClickWallEnabled = status
+            WIFIModuleConnectionManager.sharedInstance.sendLongPressionWallButtonCommand()
+        case movementSensorClickComponentContainer:
+            isMovementSensorClickEnabled = status
+            WIFIModuleConnectionManager.sharedInstance.sendMovementSensorCommand()
+        default:
+            print("Container not present in this controller.")
+        }
+    }
     
     func buttonSelected(_ button: RemoteButtonIndex, _ container: UIView) {
         switch container {
@@ -245,11 +260,13 @@ extension SettingsViewController : ButtonClickSelectedDelegate {
         case longClickComponentContainer:
             longClickWallButtonID = button
             WIFIModuleConnectionManager.sharedInstance.sendLongPressionWallButtonCommand()
+        case movementSensorClickComponentContainer:
+            movementSensorClickButtonID = button
+            WIFIModuleConnectionManager.sharedInstance.sendMovementSensorCommand()
         default:
-            print("Neither single click or long!")
+            print("Container not recognized!")
         }
     }
-    
 }
 
 extension SettingsViewController : UiElasticSliderDelegate {

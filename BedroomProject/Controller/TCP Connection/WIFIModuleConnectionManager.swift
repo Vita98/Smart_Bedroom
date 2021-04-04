@@ -49,6 +49,7 @@ public class WIFIModuleConnectionManager : TCPClient{
                 if let delegate = self.delegate{
                     delegate.WIFIModuleConnectionStatusChanged(actualConnectionStatus: .disconnected)
                 }
+                connectionCheckerTimer.fire()
                 
             case .setup:
                 logger.info("Entering in setup mode.")
@@ -88,8 +89,11 @@ public class WIFIModuleConnectionManager : TCPClient{
             case .disconnected:
                 self.enstablishConnection()
             case .connected:
-                logger.info("Connection still up.")
-                //Should check for the connection
+                if sendCheckConnectionCommand(){
+                    logger.info("Connection is still UP.")
+                }else{
+                    logger.info("Connection is DOWN.")
+                }
             case .setup:
                 timeSpentInSetup += Int(timer.timeInterval)
                 
@@ -138,7 +142,8 @@ public class WIFIModuleConnectionManager : TCPClient{
                     var recvCommand = String(response[start..<end])
                     let newStart = recvCommand.index(recvCommand.startIndex, offsetBy: 0)
                     let newEnd = recvCommand.index(newStart, offsetBy: 6)
-                    
+                    print("Command received: \(recvCommand)")
+
                     recvCommand = String(recvCommand[newStart..<newEnd])
                     
                     for c in recvCommand{
@@ -180,6 +185,10 @@ public class WIFIModuleConnectionManager : TCPClient{
         var finalString = string
         for _ in 1...(maxLength - string.count){ finalString += "0" }
         return finalString
+    }
+    
+    public func fireTimer(){
+        connectionCheckerTimer.fire()
     }
     
 }
@@ -233,8 +242,6 @@ extension WIFIModuleConnectionManager{
             }
         }
     }
-    
-
     
     private func truncateCommandForSetup(_ command : String) -> String{
         let startIndex = command.index(command.startIndex, offsetBy: 0)
@@ -308,6 +315,17 @@ extension WIFIModuleConnectionManager{
         }
     }
     
+    public func sendMovementSensorCommand(){
+        let finalCommand = NormalStatusOPCode.MOVEMENTSENSOR.rawValue + (isMovementSensorClickEnabled ? "11" : "00") + "\(completeButtonIndex(remoteButton: movementSensorClickButtonID , withOPCode: NormalStatusOPCode.MOVEMENTSENSOR, offset:2))"
+        
+        if sendMessage(finalCommand){
+            logger.info("Command sent: \(finalCommand)")
+        }else{
+            logger.error("Error sending the command: \(finalCommand)")
+            self.connectionStatus = .disconnected
+        }
+    }
+    
     public func sendStairCommand(withDirection direction : StairDirection, withRotationSpeed rotationSpeed : Int){
         let finalCommand = NormalStatusOPCode.STAIR.rawValue + direction.rawValue + String(repeating: "0",count: 3-String(rotationSpeed).count) + String(rotationSpeed)
         print("Sending command: \(finalCommand)")
@@ -319,14 +337,28 @@ extension WIFIModuleConnectionManager{
             self.connectionStatus = .disconnected
         }
     }
+    
+    public func sendCheckConnectionCommand() -> Bool{
+        let finalCommand = SetupStatusOPCode.CHECKCONNECTION.rawValue
+        
+        if sendMessage(finalCommand){
+            logger.info("Command sent: \(finalCommand)")
+            return true
+        }else{
+            logger.error("Error sending the command: \(finalCommand)")
+            self.connectionStatus = .disconnected
+            return false
+        }
+    }
 }
 
 
 private class SetupConfiguration {
-    var section = false
-    var wallButton = false
-    var firstClickWallButton = false
-    var longPressionWallButton = false
+    private var section = false
+    private var wallButton = false
+    private var firstClickWallButton = false
+    private var longPressionWallButton = false
+    private var movementSensor = false
     private var logger = Logger()
     
     func reset(){
@@ -334,10 +366,11 @@ private class SetupConfiguration {
         wallButton = false
         firstClickWallButton = false
         longPressionWallButton = false
+        movementSensor = false
     }
     
     func isComplete() -> Bool{
-        return section && wallButton && firstClickWallButton && longPressionWallButton
+        return section && wallButton && firstClickWallButton && longPressionWallButton && movementSensor
     }
     
     func fillUpConfiguration(setupCommandsReceived setupCommands : [String]) -> [String] {
@@ -383,6 +416,13 @@ private class SetupConfiguration {
                     wallButton = true
                 }else{
                     returnValue.append(SetupConfigurationOPCode.WALLBUTTON.rawValue)
+                }
+            case SetupConfigurationOPCode.MOVEMENTSENSOR.rawValue:
+                logger.log("MOVEMENTSENSOR Setup command received with payload \(payload)")
+                if updateMovementSensor(payload: payload){
+                    movementSensor = true
+                }else{
+                    returnValue.append(SetupConfigurationOPCode.MOVEMENTSENSOR.rawValue)
                 }
                
             default:
@@ -454,6 +494,28 @@ private class SetupConfiguration {
         for section in 0..<4 {
             BedroomSelectedSections[section] = ( newPayload[newPayload.index(newPayload.startIndex, offsetBy: section)] == "1" ? true : false )
         }
+        return true
+    }
+    
+    private func updateMovementSensor(payload newPayload : String) -> Bool {
+        guard newPayload.count == 4 else { return false }   //If the lenght of the payload is different from 4 means that the payload is incorrent
+
+        //Extrapolating the status of the single click from the payload
+        let enabled = String(newPayload[..<newPayload.index(newPayload.startIndex, offsetBy: 2)])
+        
+        //Extrapolating the button code from the payload
+        let buttonID = String(newPayload[newPayload.index(newPayload.startIndex, offsetBy: 2)..<newPayload.endIndex])
+        
+        //Trying  to cast the buttonID from the payload into a INT
+        guard let remoteButtonIndex = Int(buttonID) else { return false }
+        
+        //Checking if the remote button code in the payload is a real and correct code associated to a remote button
+        guard let _ = REMOTE_BUTTON[remoteButtonIndex + 1] else { return false }
+        
+        isMovementSensorClickEnabled = enabled == "11" ? true : false
+        
+        movementSensorClickButtonID = remoteButtonIndex + 1
+        
         return true
     }
 }
