@@ -32,6 +32,12 @@
 
 #include <IRremote.h>
 #include <IRremoteInt.h>
+#include <StairManager.h>
+#include <ConnectionHelper.h>
+#include <SectionManager.h>
+#include <WallButton.h>
+#include <MovementSensor.h>
+
 
 
 
@@ -46,34 +52,43 @@
 
 #define BUTTON_NUM 24
 #define RAW_MESSAGES_LENGHT 68
-#define SINGLE_MESSAGE_LENGTH 10
-#define NUM_OPCODE 7
-#define NUM_SETUP_OPCODE 5
-#define NUM_CONTROL_OPCODE 3
 
-//Pin of the IR led in quadrant order
-const int IR_PINS[] = {30,31,32,33};
+// CONSTANT FOR THE SECTIONS
+#define SECTION_ONE_PIN 30
+#define SECTION_TWO_PIN 31
+#define SECTION_THREE_PIN 32
+#define SECTION_FOUR_PIN 33
 
-#define WALL_BUTTON_PIN 29
-#define RECV_PIN 3
+// CONSTANT FOR THE MOTOR
+#define MOTOR_DIRECTION_PIN 10
+#define MOTOR_CONNECTION_PIN 8
 
+#define STAIR_OPEN_BUTTON_PIN 43
+#define STAIR_CLOSE_BUTTON_PIN 41
+#define STAIR_RELE_PIN 24
 
-//Special button
-#define ON 0
-#define OFF 1
-#define MORE_BRIGHT 10
-#define LESS_BRIGHT 11
-#define BABY_COLOR 14
-#define READ_COLOR 5
+// WALL BUTTON
+#define WALL_BUTTON_CONNECTION_PIN 29
+#define WALL_BUTTON_SINGLE_CLICK_DELAY 2
+#define WALL_BUTTON_LONG_PRESSION_DELAY 3
 
-
-
-//Pin for all the button on the wooden beam
-#define OPEN_STAIR_PIN 43
-#define CLOSE_STAIR_PIN 44
-#define SECOND_BUTTON_PIN 41
+// MOVEMENT SENSOR
+#define MOVEMENT_SENSOR_CONNECTION_PIN 26
 
 
+
+
+/*-------------------------------------------------------------------------------------
+|                           DEFINITION OF ALL THE ENUM                                |
+--------------------------------------------------------------------------------------*/
+enum SpecialButtons {
+  ON = 0,
+  OFF = 1,
+  MORE_BRIGHT = 10,
+  LESS_BRIGHT = 11,
+  BABY_COLOR = 14,
+  READ_COLOR = 5,
+};
 
 
 
@@ -114,10 +129,6 @@ char RAW_BUTTON_CODE[BUTTON_NUM][RAW_MESSAGES_LENGHT] =
 
 
 
-enum StairDirection {
-  Backward,
-  Forward
-};
 
 
 
@@ -126,96 +137,31 @@ enum StairDirection {
 
 
 /*-------------------------------------------------------------------------------------
-|                           DEFINITION OF ALL THE VARIABLES                           |
+|                           DEFINITION OF ALL THE DATA                                |
 --------------------------------------------------------------------------------------*/
-
-//State variables for the enabled quadrant
-bool EnabledIRQ[] = {true,true,true,true};
-
 //Status variables for the light
 bool isLightOn = false;
 
-//Variable with the index of the command to be executed after the ON command
-//from the Wall button
-//Default value = READ command
-int singleClickWbuttonButtonID = READ_COLOR;
-bool isSingleClickEnabled = true;
-
-//Variable with the index of the command to be executed after the ON command
-//from the movement sensor
-//Default value = READ command
-int movementSensorClickButtonID = READ_COLOR;
-bool isMovementSensorEnabled = true;
-
-//Variable with the index of the command to be executed after the
-//long pression of the wall button
-//Default value = BABY command
-int longPressionWbuttonButtonID = BABY_COLOR;
-bool isLongPressionEnabled = true;
-
-//Wall button status
-bool isWallButtonEnabled = true;
-
-
-
-
-
 //Variable with the color of the light
-int lightButtonSelected = longPressionWbuttonButtonID;
+int lightButtonSelected = READ_COLOR;
 
-//Flag to remember at every iteraction that we the setup mode is active or not
+//Flag to remember at every iteraction whether the setup mode is active or not
 bool setupMode = false;
-
-//Variable used uidentify the single Wall click or the long pression
-int wallButtonNumberPression = 0;
 
 //Struct instance to send message with the IR Led
 IRsend irsend;
 
-//Array with all the OPCode
-String NormalStatusOPCode[NUM_OPCODE] = {"BUTTON","SECTIO","WBUTTO","1KWBUT","LONPRE","STAIRS","MOVSEN"};
+// Section manager
+SectionManager sectionManager;
 
-String SetupStatusOPCode[NUM_CONTROL_OPCODE] = {"CHECKCONNE","ENDSETUP","NTRCVD"};
+// Stair manager
+StairManager stairManager(STAIR_OPEN_BUTTON_PIN,STAIR_CLOSE_BUTTON_PIN);
 
-String SetupConfigurationOPCode[NUM_SETUP_OPCODE] = {"SECTIO" , "WBUTTO" , "1KWBUT" , "LONPRE", "MOVSEN"};
+// Wall button
+WallButton wallButton(WALL_BUTTON_CONNECTION_PIN,READ_COLOR,BABY_COLOR);
 
-String ConnectionOPCode[2] = {"NEWCONNECT", "ENDCONNECT"};
-
-
-
-
-
-
-
-
-/*-------------------------------------------------------------------------------------
-|                      SECTION FOR THE STAIR STEPPER MOTOR                            |
---------------------------------------------------------------------------------------*/
-const int MOTOR_STEP_PIN = 8;
-const int MOTOR_DIRECTION_PIN = 10;
-const int MOTOR_ENABLER_RELE_PIN = 24;
-const int MOVEMENT_SENSOR_PIN = 26;
-
-
-bool isMovementDetected = false;
-bool stairAck = false;
-bool stairAckWifi = false;
-StairDirection wifiStairCurrentDirection = Forward;
-int wifiStairCurrentSpeed = 0;
-int cyclesWithoutStairAck = 0;
-
-int minDelayRotation = 500;
-int maxDelayRotation = 1000;
-bool isMotorEnabled = false;
-
-
-
-
-
-
-
-
-
+// Movement sensor
+MovementSensor movementSensor(MOVEMENT_SENSOR_CONNECTION_PIN,READ_COLOR);
 
 
 
@@ -223,7 +169,6 @@ bool isMotorEnabled = false;
 
 
 void setup() {
-
   //Inizializing the serial to print something to the console
   Serial.begin(115200);
 
@@ -231,48 +176,15 @@ void setup() {
   Serial1.begin(115200);
   Serial1.setTimeout(50);
 
-  //Setting the pinMode of the IRSender LED
-  pinMode(IR_PINS[0], OUTPUT);
-  pinMode(IR_PINS[1], OUTPUT);
-  pinMode(IR_PINS[2], OUTPUT);
-  pinMode(IR_PINS[3], OUTPUT);
-
-  //Setting enabled all the quadrant
-  digitalWrite(IR_PINS[0],HIGH);
-  digitalWrite(IR_PINS[1],HIGH);
-  digitalWrite(IR_PINS[2],HIGH);
-  digitalWrite(IR_PINS[3],HIGH);
-  
-  //Setting the pinMode for the Wall button pin
-  pinMode(WALL_BUTTON_PIN,INPUT);
-
-  //Setting the pinMode for the wooden beam buttons
-  pinMode(OPEN_STAIR_PIN, INPUT);
-  pinMode(CLOSE_STAIR_PIN, INPUT);
-  pinMode(SECOND_BUTTON_PIN, INPUT);
-
-  //Setting the pinMode for the stepper motor
-  pinMode(MOTOR_STEP_PIN,OUTPUT);
-  pinMode(MOTOR_DIRECTION_PIN,OUTPUT);
-  pinMode(MOTOR_ENABLER_RELE_PIN,OUTPUT);
-
-  //Setting the pinMode for the movement sensor
-  pinMode(MOVEMENT_SENSOR_PIN, INPUT);
-
-  digitalWrite(MOTOR_ENABLER_RELE_PIN, LOW);
-
+  int sectionsPin[] = {SECTION_ONE_PIN,SECTION_TWO_PIN,SECTION_THREE_PIN,SECTION_FOUR_PIN};
+  sectionManager.setSectionsPin(sectionsPin);
+  stairManager.setMotor(MOTOR_DIRECTION_PIN,MOTOR_CONNECTION_PIN,STAIR_RELE_PIN);
 
   delay(2000);
 }
 
-
-
-
-
-
-
 void loop() {
-
+  
   //Read the message from the ESP module
   String incomingString = "";
   while(Serial1.available() > 0){
@@ -287,14 +199,16 @@ void loop() {
 
     //Used to prevent loss of command sent at the same time
     for (int index = 0; index < (int) incomingString.length() / SINGLE_MESSAGE_LENGTH; index++){
-      String command = incomingString.substring(index * SINGLE_MESSAGE_LENGTH, index * SINGLE_MESSAGE_LENGTH + SINGLE_MESSAGE_LENGTH);
+      String command = getString(index,incomingString);
+      Serial.print("Single command: ");
+      Serial.println(command);
 
       //Initializing the setup if the connection with the client is ended
-      if (command.startsWith(ConnectionOPCode[1]) ){
+      if (isConnectionEnded(command)){
         //If the command is the end connection, we have to reset the setupMode to false
         setupMode = false;
         continue; //Jump directly to the other command
-      }else if (command.startsWith(ConnectionOPCode[0])){
+      }else if (isNewConnection(command)){
         //If the command is the start connection, starting the setup procedure
         setupMode = true;
         
@@ -306,18 +220,20 @@ void loop() {
         continue;
       }
 
-      
-      
+
       if (setupMode == true){
         //Setup mode enabled
 
-        if ( command.startsWith(SetupStatusOPCode[2]) ) {
+        if (isNotReceived(command)) {
+
+          Serial.print("Missing command: ");
+          Serial.println(command);
         
           //Not received message
           //Sending the missing configuration
           sendMissingConfiguration(command);
         
-        } else if ( command.startsWith(SetupStatusOPCode[1]) ) {
+        } else if (isEndSetup(command)) {
           //End setup message
           setupMode = false;
         } else {
@@ -326,32 +242,32 @@ void loop() {
     
       }else{
         //Setup mode not enabled
-        if (!command.startsWith(NormalStatusOPCode[5]) ){
-          stairAckWifi=false;
+        if (!isStairCommand(command)){
+          stairManager.setStairAckWifi(false);
         }
                 
-        if ( command.startsWith(NormalStatusOPCode[0]) ) {
+        if (isButtonCommand(command)) {
           //BUTTON command received
           BUTTONMessageProcedure(command.substring(NormalStatusOPCode[0].length(),command.length()));
-        }else if (command.startsWith(NormalStatusOPCode[1]) ) {
+        }else if (isSectionCommand(command)) {
           //SECTIOn command received
           SECTIOMessageProcedure(command.substring(NormalStatusOPCode[1].length(),command.length()));
-        }else if (command.startsWith(NormalStatusOPCode[2]) ) {
+        }else if (isWallButtonCommand(command)) {
           //WBUTTO command received
           WBUTTOMessageProcedure(command.substring(NormalStatusOPCode[2].length(),command.length()));
-        }else if (command.startsWith(NormalStatusOPCode[3]) ) {
+        }else if (isSingleClickWallButtonCommand(command)) {
           //1KWBUT command received
           SKWBUTMessageProcedure(command.substring(NormalStatusOPCode[3].length(),command.length()));
-        }else if (command.startsWith(NormalStatusOPCode[4]) ) {
+        }else if (isLongPressionWallButtonCommand(command)) {
           //LONPRE command received
           LONPREMessageProcedure(command.substring(NormalStatusOPCode[4].length(),command.length()));
-        }else if (command.startsWith(NormalStatusOPCode[5]) ) {
+        }else if (isStairCommand(command)) {
           //STAIR command received
-          stairAckWifi = true;
+          stairManager.setStairAckWifi(true);
           STAIRMessageProcedure(command.substring(NormalStatusOPCode[5].length(),command.length()));
-        }else if (command.startsWith(NormalStatusOPCode[6]) ){
+        }else if (isMovementSensorCommand(command)){
           MOVSENMessageProcedure(command.substring(NormalStatusOPCode[6].length(),command.length()));
-        }else if (command.startsWith(SetupStatusOPCode[0]) ){
+        }else if (isCheckConnection(command)){
           //CHECKCONNE command
           // Command to check if there is still connection
           //Answering with the same command
@@ -359,99 +275,68 @@ void loop() {
           Serial.println("CHECKCOMMAND received!");
         } 
       }
-    }    
+    }
   }
 
   //Calling the method for the management of the movement sensor
-  if(isMovementSensorEnabled == true ) movementSensorManagement();
+  if(movementSensor.isEnabled()) movementSensorManagement();
 
   //Calling the method for the management of the stairs button
-  stairAck = stairManager();
-  
+  stairManager.runStairManager();
+
   //Callling the method for the managemet of the wall button
-  if (isWallButtonEnabled == true && stairAck == false) wallButtonManager();
-
-  if(isMotorEnabled){
-    if(!stairAck && !stairAckWifi) cyclesWithoutStairAck++;
-    else cyclesWithoutStairAck = 0;
-  
-    //Closing the motor relè after 10 cycles without a movement command
-    if(cyclesWithoutStairAck == 10){
-      digitalWrite(MOTOR_ENABLER_RELE_PIN, LOW);
-      isMotorEnabled = false;
-      Serial.println("Disabling the motor!");
-    }
-    stairAck=false;
-  }
+  if (wallButton.isWallButtonEnabled() == true && stairManager.getStairAck() == false && stairManager.getStairAckWifi() == false) wallButtonManager();
+    
 }
-
-
-
-
 
 // Method that manage everything about the movement sensor
 void movementSensorManagement(){
-  if (digitalRead(MOVEMENT_SENSOR_PIN) == HIGH){
-    if (isMovementDetected == false){
-      Serial.println("MOVEMENT DETECTED!");
-      isMovementDetected = true;
-      if(isLightOn == false){
-        Serial.println("Turning on the light!");
-        //Turning on the light and then the correct effect
+  if(movementSensor.detectMovement()){
+    if(isLightOn == false){
+      Serial.println("Turning on the light!");
+      //Turning on the light and then the correct effect
+      sendIRMessage(RAW_BUTTON_CODE[ON]);
+      sendIRMessage(RAW_BUTTON_CODE[movementSensor.getEffect()]);
+      lightButtonSelected = movementSensor.getEffect();
+      isLightOn = true;
+    }
+  }
+}
+
+// Method that manage everything about the wall button
+void wallButtonManager(){
+  int numberOfPression = wallButton.readWallButtonPression();
+
+  //Check if the pression is ended
+  if(wallButton.isPressionEnded()){
+    
+    if(wallButton.isSingleClickEnabled() && (numberOfPression > 0 && numberOfPression <= WALL_BUTTON_SINGLE_CLICK_DELAY)){
+      //Single click
+      if (isLightOn == true) sendIRMessage(RAW_BUTTON_CODE[OFF]);
+      else{
+        //Send first the command associated and then the ON command
         sendIRMessage(RAW_BUTTON_CODE[ON]);
-        sendIRMessage(RAW_BUTTON_CODE[movementSensorClickButtonID]);
-        lightButtonSelected = movementSensorClickButtonID;
+        sendIRMessage(RAW_BUTTON_CODE[wallButton.getSingleClickEffect()]);
+        lightButtonSelected = wallButton.getSingleClickEffect();
+      }
+      isLightOn = !isLightOn;
+      
+    }else if(wallButton.isLongPressionEnabled() && numberOfPression >= WALL_BUTTON_LONG_PRESSION_DELAY){
+      //Long click 
+      int longPressionEffect = wallButton.getLongPressionEffect();
+      
+      if (isLightOn == true) sendIRMessage(RAW_BUTTON_CODE[longPressionEffect]);
+      else{
+        //Send first the command associated and then the ON command
+        sendIRMessage(RAW_BUTTON_CODE[ON]);
+        sendIRMessage(RAW_BUTTON_CODE[longPressionEffect]);
         isLightOn = true;
+        lightButtonSelected = longPressionEffect;
       }
     }
-  }else{
-    if (isMovementDetected == true){
-      Serial.println("MOVEMENT NOT DETECTED ANYMORE!");
-      isMovementDetected = false;
-    }
   }
+  delay(100);
 }
-
-//Function used to send the acknoledgment message
-//It is used to answere to the check command
-void sendAcknowledgment(){
-  Serial1.print(SetupStatusOPCode[0]);
-}
-
-//Functionn used to send the missing setup configuration based on the incomingCommand parameter
-// @parameter incomingCommand is the commmand with the NTRCVD command as head and the code of the missing command right after
-void sendMissingConfiguration(String incomingCommand){
-
-  String missingCommand = incomingCommand.substring(SetupStatusOPCode[2].length(),incomingCommand.length() - 2);
-
-  //Check among all the command which one is missing
-  if ( SetupConfigurationOPCode[0].startsWith(missingCommand) ) {
-    //Missing the SECTI Command
-    sendSetupConfiguration("10000");
-  }
-  if ( SetupConfigurationOPCode[1].startsWith(missingCommand) ) {
-    //Missing the Wall button status command
-    sendSetupConfiguration("01000");
-  }
-  if ( SetupConfigurationOPCode[2].startsWith(missingCommand) ) {
-    //Missing the single click command
-    sendSetupConfiguration("00100");
-  }
-  if ( SetupConfigurationOPCode[3].startsWith(missingCommand) ) {
-    //Missing the long pression command
-    sendSetupConfiguration("00010");
-  }
-  if ( SetupConfigurationOPCode[4].startsWith(missingCommand) ) {
-    //Missing the movement sensor command
-    sendSetupConfiguration("00001");
-  }
-}
-
-
-
-
-
-
 
 //Function used to send the setup 
 void sendSetupConfiguration(String configuration){
@@ -461,125 +346,99 @@ void sendSetupConfiguration(String configuration){
   
   if ( configuration.charAt(0) == '1' ) {
     //Sending the SECTI Command
-    finalCommand = SetupConfigurationOPCode[0] + getSectionsString();
+    finalCommand = SetupConfigurationOPCode[0] + sectionManager.getSectionsString();
     Serial1.print(finalCommand); 
   }
 
   if ( configuration.charAt(1) == '1' ){
     //Sending the wall button status
     finalCommand = SetupConfigurationOPCode[1];
-    finalCommand += ( isWallButtonEnabled == true ) ? "1111" : "0000";
+    finalCommand += ( wallButton.isWallButtonEnabled() == true ) ? "1111" : "0000";
     Serial1.print(finalCommand);
   }
 
   if ( configuration.charAt(2) == '1' ){
     //Sending the command associated to the single click
     finalCommand = "";
-    finalCommand = SetupConfigurationOPCode[2] + getPayloadSingleClick();
+    finalCommand = SetupConfigurationOPCode[2] + wallButton.getPayloadSingleClick();
     Serial1.print(finalCommand);
   }
 
   if ( configuration.charAt(3) == '1'){
     //Sending the command associated to the long pression
     finalCommand = "";
-    finalCommand = SetupConfigurationOPCode[3] + getPayloadLongPression();
+    finalCommand = SetupConfigurationOPCode[3] + wallButton.getPayloadLongPression();
     Serial1.print(finalCommand);
   }
 
   if ( configuration.charAt(4) == '1'){
     //Sending the command associated to the movement sensor
     finalCommand = "";
-    finalCommand = SetupConfigurationOPCode[4] + getPayloadMovementSensor();
+    finalCommand = SetupConfigurationOPCode[4] + movementSensor.getPayloadMovementSensor();
     Serial1.print(finalCommand);
   }
 }
 
+//Functionn used to send the missing setup configuration based on the incomingCommand parameter
+// @parameter incomingCommand is the commmand with the NTRCVD command as head and the code of the missing command right after
+void sendMissingConfiguration(String incomingCommand){
 
+  String missingCommand = incomingCommand.substring(SetupStatusOPCode[2].length(),incomingCommand.length() - 2);
 
-String getPayloadMovementSensor(){
-  String payload = ( isMovementSensorEnabled ) ? "11" : "00";
-  payload += addZeros(movementSensorClickButtonID,2);
-  return payload;
-}
-
-String getPayloadSingleClick(){
-  String payload = ( isSingleClickEnabled ) ? "11" : "00";
-  payload += addZeros(singleClickWbuttonButtonID,2);
-  return payload;
-}
-
-String getPayloadLongPression(){
-  String payload = ( isLongPressionEnabled ) ? "11" : "00";
-  payload += addZeros(longPressionWbuttonButtonID,2);
-  return payload;
-}
-
-String addZeros(int button, int maxLength){
-  String numberString = String(button);
-  String finalString = "";
-  for (int i=0;i<(maxLength-numberString.length());i++) { finalString += "0"; }
-  return finalString + numberString;
-}
-
-
-
-
-//Method that return the status of the IR sender
-//as a String in quadrant order
-String getSectionsString(){
-  String sections = "";
-  for (int i=0;i<4;i++){ sections += (EnabledIRQ[i] == true) ? "1" : "0"; }
-  return sections;
-}
-
-
-
-
-// Method that manage everything about the wall button
-void wallButtonManager(){
-
-  //Reading the pression of the wall button
-  if (digitalRead(WALL_BUTTON_PIN) == HIGH){
-    wallButtonNumberPression++;
-    Serial.write("Pressed");
-  }else{
-
-    //Wall button pression ended
-    if (wallButtonNumberPression == 1) {
-      
-      //Single click
-      if (isSingleClickEnabled == true){
-        if (isLightOn == true) sendIRMessage(RAW_BUTTON_CODE[OFF]);
-        else{
-          //Send first the command associated and then the ON command
-          sendIRMessage(RAW_BUTTON_CODE[ON]);
-          sendIRMessage(RAW_BUTTON_CODE[singleClickWbuttonButtonID]);
-          lightButtonSelected = singleClickWbuttonButtonID;
-        }
-      }
-      
-      isLightOn = !isLightOn;
-      
-    }else if (wallButtonNumberPression > 2){
-      //Long pression
-
-      if (isLongPressionEnabled == true){
-        if (isLightOn == true) sendIRMessage(RAW_BUTTON_CODE[longPressionWbuttonButtonID]);
-        else{
-          //Send first the command associated and then the ON command
-          sendIRMessage(RAW_BUTTON_CODE[ON]);
-          sendIRMessage(RAW_BUTTON_CODE[longPressionWbuttonButtonID]);
-          isLightOn = true;
-          lightButtonSelected = longPressionWbuttonButtonID;
-        }
-      }
-
-    }
-
-    wallButtonNumberPression = 0;
+  //Check among all the command which one is missing
+  if ( isMissingSectionCommand(missingCommand) ) {
+    //Missing the SECTI Command
+    sendSetupConfiguration("10000");
   }
-  delay(150);
+  if ( isMissingWallButtonCommand(missingCommand) ) {
+    //Missing the Wall button status command
+    sendSetupConfiguration("01000");
+  }
+  if ( isMissingSingleClickCommand(missingCommand) ) {
+    //Missing the single click command
+    sendSetupConfiguration("00100");
+  }
+  if ( isMissingLongPressionCommand(missingCommand) ) {
+    //Missing the long pression command
+    sendSetupConfiguration("00010");
+  }
+  if ( isMissingSectionMovementSensorCommand(missingCommand) ) {
+    //Missing the movement sensor command
+    sendSetupConfiguration("00001");
+  }
 }
+
+//Function called when is received a section command
+//Function that set the the status of the IRSender pins based on the received sections status
+void SECTIOMessageProcedure(String payload){
+  Serial.println("SECTIO Body message: "+ payload);
+  sectionManager.updateSectionsStatus(payload);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void sendIRMessage(char* message){
     int i;
@@ -595,11 +454,6 @@ void sendIRMessage(char* message){
         irsend.sendRaw(finalMessage,RAW_MESSAGES_LENGHT,38);
     }
 }
-
-
-
-
-
 
 //Procedure called when is received a normal button command
 void BUTTONMessageProcedure(String payload){
@@ -632,30 +486,29 @@ void BUTTONMessageProcedure(String payload){
   }
 }
 
-//Function called when is received a section command
-//Function that set the the status of the IRSender pins based on the received sections status
-void SECTIOMessageProcedure(String payload){
-  Serial.println("SECTIO Body message: "+ payload);
-
-  //Setting the selected section
-  for (int i = 0; i < 4; i++){
-
-    //Saving the status
-    EnabledIRQ[i] = payload.charAt(i) == '1' ? true : false;
-
-    //Setting the pin of the section
-    digitalWrite(IR_PINS[i], EnabledIRQ[i] == true ? HIGH : LOW );
-  }
-}
-
 //Function called when is received a wall button (WBUTTO) command
 //Function that enable or disable all the functionalities of the wall button based on the payload of the received command
 void WBUTTOMessageProcedure(String payload){
   Serial.println("WBUTTO Body message: "+ payload);
 
   //If the payload received is 1111 means to enable the wall button
-  if (payload == "1111") isWallButtonEnabled = true;
-  else isWallButtonEnabled = false; 
+  wallButton.enableWallButton( (payload == "1111") );
+}
+
+void SKWBUTMessageProcedure(String payload){
+  Serial.println("SKWBU Body message: "+ payload);
+
+  if (payload.length() != 4) return;
+
+  //if the first 2 characters are 1 means that the single pression command is enabled
+  wallButton.enableSingleClick( (payload.charAt(0) == '1' && payload.charAt(1) == '1') );
+
+  //Getting the substring of the payload with the code of the button
+  int buttonCode = (payload.substring(2)).toInt();
+
+  if (buttonCode > 0 && buttonCode <= BUTTON_NUM){
+    wallButton.setSingleClickEffect(buttonCode - 1);
+  }
 }
 
 //Function called when is received a long pression (LONPRE) command
@@ -665,14 +518,25 @@ void LONPREMessageProcedure(String payload){
   if (payload.length() != 4) return;
 
   //if the first 2 characters are 1 means that the Long pression command is enabled
-  if (payload.charAt(0) == '1' && payload.charAt(1) == '1') isLongPressionEnabled = true;
-  else isLongPressionEnabled = false;
+  wallButton.enableLongPression( (payload.charAt(0) == '1' && payload.charAt(1) == '1') );
 
   int buttonCode = (payload.substring(2)).toInt();
 
   if (buttonCode > 0 && buttonCode <= BUTTON_NUM){
-    longPressionWbuttonButtonID = buttonCode - 1;
+    wallButton.setLongPressionEffect(buttonCode - 1);
   }
+}
+
+void STAIRMessageProcedure(String payload){
+  Serial.println("STAIR Body message: "+ payload);
+
+  String dire = payload.substring(0,1);
+  String rotationSpeed = payload.substring(1);
+
+  stairManager.setWifiCurrentSpeed(rotationSpeed.toInt());
+  
+  if(dire == "1") stairManager.setWifiDirection(stairManager.FORWARD);
+  else if(dire == "0") stairManager.setWifiDirection(stairManager.BACKWARD);
 }
 
 //Function called when is received a movement sensor (MOVSEN) command
@@ -682,129 +546,8 @@ void MOVSENMessageProcedure(String payload){
   if (payload.length() != 4) return;
 
   //if the first 2 characters are 1 means that the movment sensor is enabled
-  if (payload.charAt(0) == '1' && payload.charAt(1) == '1') isMovementSensorEnabled = true;
-  else isMovementSensorEnabled = false;
+  movementSensor.enable( (payload.charAt(0) == '1' && payload.charAt(1) == '1') );
 
   int buttonCode = (payload.substring(2)).toInt();
-
-  if (buttonCode > 0 && buttonCode <= BUTTON_NUM){
-    movementSensorClickButtonID = buttonCode - 1;
-  }
-}
-
-void SKWBUTMessageProcedure(String payload){
-  Serial.println("SKWBU Body message: "+ payload);
-
-  if (payload.length() != 4) return;
-
-  //if the first 2 characters are 1 means that the single pression command is enabled
-  if (payload.charAt(0) == '1' && payload.charAt(1) == '1') isSingleClickEnabled = true;
-  else isSingleClickEnabled = false;
-
-  //Getting the substring of the payload with the code of the button
-  int buttonCode = (payload.substring(2)).toInt();
-
-  if (buttonCode > 0 && buttonCode <= BUTTON_NUM){
-    singleClickWbuttonButtonID = buttonCode - 1;
-  }
-}
-
-void STAIRMessageProcedure(String payload){
-  Serial.println("STAIR Body message: "+ payload);
-
-  String dire = payload.substring(0,1);
-  String rotationSpeed = payload.substring(1);
-  wifiStairCurrentSpeed = rotationSpeed.toInt();
-  
-  if(dire == "1"){
-    wifiStairCurrentDirection = Forward;
-  }else if(dire == "0"){
-    wifiStairCurrentDirection = Backward;
-  }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*-------------------------------------------------------------------------------------
-|                      FUNCTIONS FOR THE STEPPER MOTOR                                |
---------------------------------------------------------------------------------------*/
-
-bool stairManager(){
-
-  int currentSpeed = wifiStairCurrentSpeed > 0 ? wifiStairCurrentSpeed : 100;
-  if (wifiStairCurrentSpeed == 0) stairAckWifi = false;
-
-  if(digitalRead(OPEN_STAIR_PIN) == HIGH || (wifiStairCurrentSpeed > 0 && wifiStairCurrentDirection == Forward && stairAckWifi == true)){
-    goForwards(currentSpeed);
-    return true;
-  }
-  if(digitalRead(SECOND_BUTTON_PIN) == HIGH || (wifiStairCurrentSpeed > 0 && wifiStairCurrentDirection == Backward && stairAckWifi == true)){
-    goBackwards(currentSpeed);
-    return true;
-  }
-
-  //Serial.println(digitalRead(SECOND_BUTTON_PIN));
-  return false;
-}
-
-void goForwards(int rotationSpeed){
-  if(!isMotorEnabled){
-    digitalWrite(MOTOR_ENABLER_RELE_PIN, HIGH);
-    isMotorEnabled = true;
-  }
-
-  Serial.print("\nRotation speed: ");
-  Serial.println(rotationSpeed);
-  
-  Serial.println("Going forward");
-  digitalWrite(MOTOR_DIRECTION_PIN,LOW); // Enables the motor to move in a particular direction
-
-  int i;
-  int del = (float(rotationSpeed)/100)*(minDelayRotation - maxDelayRotation) + maxDelayRotation;
-
-  Serial.print("Rotation speed in del: ");
-  Serial.println(del);
-  
-  if(del == maxDelayRotation) return;
-  
-  for(i=0;i<100;i++){
-    // Makes 200 pulses for making one full cycle rotation
-    digitalWrite(MOTOR_STEP_PIN,HIGH); 
-    delayMicroseconds(del); 
-    digitalWrite(MOTOR_STEP_PIN,LOW); 
-    delayMicroseconds(del); 
-  }
-}
-
-void goBackwards(int rotationSpeed){
-  if(!isMotorEnabled){
-    digitalWrite(MOTOR_ENABLER_RELE_PIN, HIGH);
-    isMotorEnabled = true;
-  }
-  
-  Serial.println("Going Backwards");
-  digitalWrite(MOTOR_DIRECTION_PIN,HIGH); // Enables the motor to move in a particular direction
-  
-  int i;
-  int del = (float(rotationSpeed)/100)*(minDelayRotation - maxDelayRotation) + maxDelayRotation;
-  if(del == maxDelayRotation) return;
-
-  for(i=0;i<100;i++){
-    // Makes 200 pulses for making one full cycle rotation
-    digitalWrite(MOTOR_STEP_PIN,HIGH); 
-    delayMicroseconds(del); 
-    digitalWrite(MOTOR_STEP_PIN,LOW); 
-    delayMicroseconds(del); 
-  }
+  if (buttonCode > 0 && buttonCode <= BUTTON_NUM) movementSensor.setEffect(buttonCode - 1);
 }
