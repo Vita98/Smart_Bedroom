@@ -211,7 +211,6 @@ void loop() {
       }else if (isNewConnection(command)){
         //If the command is the start connection, starting the setup procedure
         setupMode = true;
-        
         Serial.println("SETUP ACTIVE");
 
         //Send to the client all the setup information
@@ -225,7 +224,6 @@ void loop() {
         //Setup mode enabled
 
         if (isNotReceived(command)) {
-
           Serial.print("Missing command: ");
           Serial.println(command);
         
@@ -236,15 +234,11 @@ void loop() {
         } else if (isEndSetup(command)) {
           //End setup message
           setupMode = false;
-        } else {
-          //Send the rejection command
         }
     
       }else{
         //Setup mode not enabled
-        if (!isStairCommand(command)){
-          stairManager.setStairAckWifi(false);
-        }
+        if (!isStairCommand(command)) stairManager.setStairAckWifi(false);
                 
         if (isButtonCommand(command)) {
           //BUTTON command received
@@ -408,38 +402,7 @@ void sendMissingConfiguration(String incomingCommand){
   }
 }
 
-//Function called when is received a section command
-//Function that set the the status of the IRSender pins based on the received sections status
-void SECTIOMessageProcedure(String payload){
-  Serial.println("SECTIO Body message: "+ payload);
-  sectionManager.updateSectionsStatus(payload);
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+//Function that send the message using the irsend.sendRow method
 void sendIRMessage(char* message){
     int i;
 
@@ -453,6 +416,13 @@ void sendIRMessage(char* message){
     for (i=0;i<10;i++){
         irsend.sendRaw(finalMessage,RAW_MESSAGES_LENGHT,38);
     }
+}
+
+//Function called when is received a section command
+//Function that set the the status of the IRSender pins based on the received sections status
+void SECTIOMessageProcedure(String payload){
+  Serial.println("SECTIO Body message: "+ payload);
+  sectionManager.updateSectionsStatus(payload);
 }
 
 //Procedure called when is received a normal button command
