@@ -33,6 +33,8 @@
 
 
 #include "ESP8266WiFi.h"
+#include <HttpRequestJson.h>
+#include <Times.h>
 
 
 //Wifi logIn information
@@ -46,11 +48,27 @@ WiFiServer wifiServer(1616);
 
 
 //OpCode for the connection with the client
-String ConnectionOPCode[2] = {"NEWCONNECT", "ENDCONNECT"};
+String ConnectionOPCode[3] = {"NEWCONNECT", "ENDCONNECT","CHANLIGH"};
 
 //Timout for the connection
 const int connectionDelay = 50;
 const int connectionTimeout = 5000;
+
+
+
+//Link to the request for the time in which the sun rises and sets
+//loc = 41.010563, 17.005021
+//All the time are in UTC
+String lat = "41.010563";
+String lng = "17.005021";
+String sunriseSunsetApiLink = "http://api.sunrise-sunset.org/json?lat="+lat+"&lng="+lng+"&formatted=0";
+
+//Link to the rest api to get the time in UTC
+String timeApiLink = "http://worldtimeapi.org/api/timezone/Etc/UTC";
+
+const int API_REQUEST_DELAY = 300000; //300k 5 min
+int lastRequest = 0;
+HttpRequestJson httpRequestJson;
 
 
 
@@ -157,7 +175,75 @@ void loop() {
 
     //Informing the arduino about the disconnection of the client
     Serial.print(ConnectionOPCode[1]);
-    
   }
+
+  manageSunriseSunsetRequests();
+}
+
+
+
+
+
+/*
+ * ALL THE FUNCTION WITH THE API REQUEST FOR THE MOVEMENT SENSOR
+ */
+
+void manageSunriseSunsetRequests(){
+
+  if(lastRequest != 0  && (millis() - lastRequest) < API_REQUEST_DELAY) return;
+
+  //Actual Time
+  Times actualTime;
+  if(!getActualTimeFromApi(actualTime)){
+    Serial.println("Someting went wrong during the download of the current time from the API!");
+    lastRequest = millis();
+    return;
+  }
+
+  //Sunrise and sunset
+  Times sunrise;
+  Times sunset;
+  if( !getSunriseSunsetFromApi(sunrise,sunset) ){
+    Serial.println("Someting went wrong during the download of the sunrise and sunset times from the API!");
+    lastRequest = millis();
+    return;
+  }
+
+  String msgToSend = ConnectionOPCode[2];
+  if(actualTime.compareTo(sunrise) >= 0 && actualTime.compareTo(sunset) < 0 ) msgToSend += "00";
+  else msgToSend += "11";
+
+  Serial.print(msgToSend);
   
+  lastRequest = millis();
+}
+
+bool getActualTimeFromApi(Times& actualTime){
+  StaticJsonDocument<768> doc;
+  bool request = httpRequestJson.getRequest(timeApiLink,doc);
+
+  if(request){
+    const char* currentDateTime = doc["datetime"];
+    actualTime.inflate(currentDateTime);
+  }
+  return request;
+}
+
+bool getSunriseSunsetFromApi(Times& sunrise, Times& sunset){
+  StaticJsonDocument<768> doc;
+  bool request = httpRequestJson.getRequest(sunriseSunsetApiLink,doc);
+
+  if(request){
+    String statu = doc["status"];
+
+    if(statu == "OK"){
+      const char* sunriseS = doc["results"]["sunrise"];
+      const char* sunsetS = doc["results"]["sunset"]; 
+
+      sunrise.inflate(sunriseS);
+      sunset.inflate(sunsetS);
+      return true;
+    }
+  }
+  return false;
 }
