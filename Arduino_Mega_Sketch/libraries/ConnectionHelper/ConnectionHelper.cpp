@@ -1,6 +1,3 @@
-/*
-
-*/
 #include "Arduino.h"
 #include "ConnectionHelper.h"
 
@@ -8,6 +5,7 @@
 String getString(int index, String incomingString){
 	return incomingString.substring(index * SINGLE_MESSAGE_LENGTH, index * SINGLE_MESSAGE_LENGTH + SINGLE_MESSAGE_LENGTH);
 }
+
 
 bool isConnectionEnded(String command){
 	return command.startsWith(ConnectionOPCode[1]);
@@ -17,10 +15,22 @@ bool isNewConnection(String command){
 	return command.startsWith(ConnectionOPCode[0]);
 }
 
+bool isChangeLightCommand(String command){
+	return command.startsWith(ConnectionOPCode[2]);
+}
 
 
 
 
+/*
+	Private function that check if the command given is the one at the "index" position in the "SetupStatusOPCode" array.
+	It will be used from all the functions that check if the given command is one of the "SetupStatusOPCode".
+
+	Parameters:
+	- command: the command string.
+	
+	Return: true if the command is the one indicated by the index, false otherwise.
+*/
 bool checkSetupStatusOpCode(String command, int index){
 	return command.startsWith(SetupStatusOPCode[index]);
 }
@@ -40,6 +50,15 @@ bool isCheckConnection(String command){
 
 
 
+/*
+	Private function that check if the command given is the one at the "index" position in the "NormalStatusOPCode" array.
+	It will be used from all the functions that check if the given command is one of the "NormalStatusOPCode".
+
+	Parameters:
+	- command: the command string.
+	
+	Return: true if the command is the one indicated by the index, false otherwise.
+*/
 bool checkNormalStatusOPCode(String command, int index){
 	return command.startsWith(NormalStatusOPCode[index]);
 }
@@ -75,10 +94,15 @@ bool isMovementSensorCommand(String command){
 
 
 
+/*
+	Private function that check if the command given is the one at the "index" position in the "NormalStatusOPCode" array.
+	It will be used from all the functions that check if the given command is one of the "NormalStatusOPCode" DURING THE SETUP.
 
-
-
-
+	Parameters:
+	- command: the command string.
+	
+	Return: true if the command is the one indicated by the index, false otherwise.
+*/
 bool checkSetupConfigurationOPCode(String command, int index){
 	return command.startsWith(NormalStatusOPCode[index]);
 }
@@ -99,7 +123,7 @@ bool isMissingLongPressionCommand(String command){
 	return checkSetupConfigurationOPCode(command,3);
 }
 
-bool isMissingSectionMovementSensorCommand(String command){
+bool isMissingMovementSensorCommand(String command){
 	return checkSetupConfigurationOPCode(command,4);
 }
 

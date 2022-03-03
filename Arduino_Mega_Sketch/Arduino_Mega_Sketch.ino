@@ -176,8 +176,11 @@ void setup() {
   Serial1.begin(115200);
   Serial1.setTimeout(50);
 
+  //Setting all the 4 section
   int sectionsPin[] = {SECTION_ONE_PIN,SECTION_TWO_PIN,SECTION_THREE_PIN,SECTION_FOUR_PIN};
   sectionManager.setSectionsPin(sectionsPin);
+
+  //Setting the motor for the stair manager
   stairManager.setMotor(MOTOR_DIRECTION_PIN,MOTOR_CONNECTION_PIN,STAIR_RELE_PIN);
 
   delay(2000);
@@ -261,7 +264,10 @@ void loop() {
           STAIRMessageProcedure(command.substring(NormalStatusOPCode[5].length(),command.length()));
         }else if (isMovementSensorCommand(command)){
           MOVSENMessageProcedure(command.substring(NormalStatusOPCode[6].length(),command.length()));
-        }else if (isCheckConnection(command)){
+        }else if( isChangeLightCommand(command) ){
+          //Message coming from the esp notifying a request to the api for the sunrise/sunset update
+          CHANLIGHMessageProcedure(command.substring(ConnectionOPCode[2].length(),command.length()));
+        } else if(isCheckConnection(command)){
           //CHECKCONNE command
           // Command to check if there is still connection
           //Answering with the same command
@@ -272,8 +278,10 @@ void loop() {
     }
   }
 
-  //Calling the method for the management of the movement sensor
-  if(movementSensor.isEnabled()) movementSensorManagement();
+  // Calling the method for the management of the movement sensor
+  // only when the status is ENABLE or is AUTO and the actual hour is a dark hour.
+  MovementSensorStatus msStatus = movementSensor.getStatus();
+  if(msStatus == ENABLED || ( msStatus == AUTO && movementSensor.getHoursType() == DARK ) ) movementSensorManagement();
 
   //Calling the method for the management of the stairs button
   stairManager.runStairManager();
@@ -393,10 +401,10 @@ void sendMissingConfiguration(String incomingCommand){
     sendSetupConfiguration("00100");
   }
   if ( isMissingLongPressionCommand(missingCommand) ) {
-    //Missing the long pression command
+    //Missing the longA pression command
     sendSetupConfiguration("00010");
   }
-  if ( isMissingSectionMovementSensorCommand(missingCommand) ) {
+  if ( isMissingMovementSensorCommand(missingCommand) ) {
     //Missing the movement sensor command
     sendSetupConfiguration("00001");
   }
@@ -514,10 +522,17 @@ void MOVSENMessageProcedure(String payload){
   Serial.println("MOVSEN Body message: "+ payload);
 
   if (payload.length() != 4) return;
-
-  //if the first 2 characters are 1 means that the movment sensor is enabled
-  movementSensor.enable( (payload.charAt(0) == '1' && payload.charAt(1) == '1') );
+  
+  movementSensor.setStausByPayload(payload.substring(0,2));
 
   int buttonCode = (payload.substring(2)).toInt();
   if (buttonCode > 0 && buttonCode <= BUTTON_NUM) movementSensor.setEffect(buttonCode - 1);
+}
+
+//Function called when is received a change light command from the ESP8266
+void CHANLIGHMessageProcedure(String payload){
+  Serial.println("CHANLIG Body message: "+ payload);
+  if(payload.length() != 2) return;
+  
+  movementSensor.setHoursType( (payload == "11") ? DARK : LIGHT);
 }
