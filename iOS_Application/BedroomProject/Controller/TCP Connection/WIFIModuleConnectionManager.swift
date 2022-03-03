@@ -316,7 +316,18 @@ extension WIFIModuleConnectionManager{
     }
     
     public func sendMovementSensorCommand(){
-        let finalCommand = NormalStatusOPCode.MOVEMENTSENSOR.rawValue + (isMovementSensorClickEnabled ? "11" : "00") + "\(completeButtonIndex(remoteButton: movementSensorClickButtonID , withOPCode: NormalStatusOPCode.MOVEMENTSENSOR, offset:2))"
+        var finalCommand = NormalStatusOPCode.MOVEMENTSENSOR.rawValue
+        
+        switch movementSensorStatus{
+        case .ENABLED:
+            finalCommand += "11"
+        case .DISABLED:
+            finalCommand += "00"
+        case .AUTO:
+            finalCommand += "22"
+        }
+        
+        finalCommand += "\(completeButtonIndex(remoteButton: movementSensorClickButtonID , withOPCode: NormalStatusOPCode.MOVEMENTSENSOR, offset:2))"
         
         if sendMessage(finalCommand){
             logger.info("Command sent: \(finalCommand)")
@@ -512,7 +523,16 @@ private class SetupConfiguration {
         //Checking if the remote button code in the payload is a real and correct code associated to a remote button
         guard let _ = REMOTE_BUTTON[remoteButtonIndex + 1] else { return false }
         
-        isMovementSensorClickEnabled = enabled == "11" ? true : false
+        switch enabled{
+            case "11":
+                movementSensorStatus = .ENABLED
+            case "00":
+                movementSensorStatus = .DISABLED
+            case "22":
+                movementSensorStatus = .AUTO
+            default:
+                print("Payload not valid");
+        }
         
         movementSensorClickButtonID = remoteButtonIndex + 1
         

@@ -18,7 +18,7 @@ class SettingsViewController: SuperViewController {
     @IBOutlet weak var backgroundLabel: UILabel!
     @IBOutlet weak var shareBackgroundLabel: UILabel!
     @IBOutlet weak var downloadRandomBackgroundLabel: UILabel!
-    @IBOutlet weak var movementSensorEnabledLabel: UILabel!
+    //@IBOutlet weak var movementSensorEnabledLabel: UILabel! //
     @IBOutlet weak var movementSensorLabel: UILabel!
     
     @IBOutlet weak var singleClickComponentContainer: UIView!
@@ -30,7 +30,8 @@ class SettingsViewController: SuperViewController {
     @IBOutlet weak var longClickSwitch: UISwitch!
     @IBOutlet weak var generalEnablerSwitch: UISwitch!
     @IBOutlet weak var randomBakgroundSwitch: UISwitch!
-    @IBOutlet weak var movementSensorClickSwitch: UISwitch!
+    @IBOutlet weak var movementSensorSegmentedControl: UISegmentedControl!
+    //@IBOutlet weak var movementSensorClickSwitch: UISwitch! //
     
     private var customElasticSlider : UIElasticSlider?
     
@@ -72,15 +73,18 @@ class SettingsViewController: SuperViewController {
     private func configureSensorSection(){
         
         //Configuring the collection view for the movement sensor
-        movementSensorClickCollectionViewController = ClickSelectionCollectionViewController(withIndexButtonSelected: movementSensorClickButtonID, withContainer: movementSensorClickComponentContainer, withSwitchController: movementSensorClickSwitch)
+        movementSensorClickCollectionViewController = ClickSelectionCollectionViewController(withIndexButtonSelected: movementSensorClickButtonID, withContainer: movementSensorClickComponentContainer)
         
-        movementSensorClickComponentContainer.insertSubview(movementSensorClickCollectionViewController.collectionView, belowSubview: movementSensorClickSwitch)
+        movementSensorClickComponentContainer.insertSubview(movementSensorClickCollectionViewController.collectionView, belowSubview: movementSensorSegmentedControl)
         
         movementSensorClickCollectionViewController.collectionView.translatesAutoresizingMaskIntoConstraints = false
-        movementSensorClickCollectionViewController.collectionView.topAnchor.constraint(equalTo: movementSensorEnabledLabel.bottomAnchor, constant: 5).isActive = true
+        movementSensorClickCollectionViewController.collectionView.topAnchor.constraint(equalTo: movementSensorSegmentedControl.bottomAnchor, constant: 5).isActive = true
         movementSensorClickCollectionViewController.collectionView.leadingAnchor.constraint(equalTo: movementSensorClickComponentContainer.leadingAnchor, constant: 0).isActive = true
         movementSensorClickCollectionViewController.collectionView.trailingAnchor.constraint(equalTo: movementSensorClickComponentContainer.trailingAnchor, constant: 0).isActive = true
         movementSensorClickCollectionViewController.collectionView.bottomAnchor.constraint(equalTo: movementSensorClickComponentContainer.bottomAnchor, constant: -5).isActive = true
+        
+        movementSensorSegmentedControl.layer.borderWidth = 0.5
+        movementSensorSegmentedControl.layer.borderColor = UIColor.white.cgColor.copy(alpha: 0.38)
     }
     
     private func configureClickSection(){
@@ -144,14 +148,29 @@ class SettingsViewController: SuperViewController {
                 self.longClickCollectionViewController.disableAllContainer(animation: true)
             }
             
-            if !isMovementSensorClickEnabled{
-                self.movementSensorClickSwitch.setOn(false, animated: true)
-                self.movementSensorClickCollectionViewController.disableCollectionView(animation: false)
-            }
+            //Movement sensor
+            self.movementSensorSegmentedControl.selectedSegmentIndex = movementSensorStatus.rawValue
+            self.movementSensorSegmentControlValueChanged(self.movementSensorSegmentedControl as Any)
         }
         
     }
     
+    @IBAction func movementSensorSegmentControlValueChanged(_ sender: Any) {
+        switch movementSensorSegmentedControl.selectedSegmentIndex{
+        case MovementSensorStatus.ENABLED.rawValue:
+            movementSensorStatus = .ENABLED
+            movementSensorClickCollectionViewController.enableCollectionView(animation: true)
+        case MovementSensorStatus.DISABLED.rawValue:
+            movementSensorStatus = .DISABLED
+            movementSensorClickCollectionViewController.disableCollectionView(animation: true)
+        case MovementSensorStatus.AUTO.rawValue:
+            movementSensorStatus = .AUTO
+            movementSensorClickCollectionViewController.enableCollectionView(animation: true)
+        default:
+            print("Movement Sensor Status not valid");
+        }
+        WIFIModuleConnectionManager.sharedInstance.sendMovementSensorCommand()
+    }
     
     @IBAction func generalEnablerSwitchValueChanged(_ sender: Any) {
         
@@ -198,10 +217,14 @@ extension SettingsViewController : ThemeDelegate {
         shareBackgroundLabel.textColor = .black
         backgroundLabel.textColor = .black
         downloadRandomBackgroundLabel.textColor = .black
-        movementSensorEnabledLabel.textColor = .black
+        //movementSensorEnabledLabel.textColor = .black
         movementSensorLabel.textColor = .black
         if let slider = customElasticSlider { slider.changeColorTheme(with: .Dark)}
         self.navigationController?.navigationBar.titleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.black]
+        
+        movementSensorSegmentedControl.selectedSegmentTintColor = UIColor.white
+        movementSensorSegmentedControl.setTitleTextAttributes([NSAttributedString.Key.foregroundColor: UIColor.black], for:.normal)
+        movementSensorSegmentedControl.setTitleTextAttributes([NSAttributedString.Key.foregroundColor: UIColor.black], for:.selected)
     }
     
     func setLightTheme() {
@@ -213,10 +236,14 @@ extension SettingsViewController : ThemeDelegate {
         shareBackgroundLabel.textColor = .white
         backgroundLabel.textColor = .white
         downloadRandomBackgroundLabel.textColor = .white
-        movementSensorEnabledLabel.textColor = .white
+        //movementSensorEnabledLabel.textColor = .white
         movementSensorLabel.textColor = .white
         if let slider = customElasticSlider { slider.changeColorTheme(with: .Light)}
         self.navigationController?.navigationBar.titleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.white]
+        
+        movementSensorSegmentedControl.selectedSegmentTintColor = UIColor.white
+        movementSensorSegmentedControl.setTitleTextAttributes([NSAttributedString.Key.foregroundColor: UIColor.white], for:.normal)
+        movementSensorSegmentedControl.setTitleTextAttributes([NSAttributedString.Key.foregroundColor: UIColor.black], for:.selected)
     }
 }
 
@@ -244,9 +271,6 @@ extension SettingsViewController : ClickSelectionCollectionViewDelegate {
         case longClickComponentContainer:
             isLongClickWallEnabled = status
             WIFIModuleConnectionManager.sharedInstance.sendLongPressionWallButtonCommand()
-        case movementSensorClickComponentContainer:
-            isMovementSensorClickEnabled = status
-            WIFIModuleConnectionManager.sharedInstance.sendMovementSensorCommand()
         default:
             print("Container not present in this controller.")
         }

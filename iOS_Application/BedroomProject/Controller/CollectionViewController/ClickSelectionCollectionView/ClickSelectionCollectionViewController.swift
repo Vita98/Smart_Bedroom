@@ -26,7 +26,7 @@ class ClickSelectionCollectionViewController: UICollectionViewController, UIColl
     private var isInitialScroll = true
     
     private let container : UIView
-    private let switchController : UISwitch
+    private var switchController : UISwitch? = nil
     
     private var collectionViewStatus : CollectionViewStatus = .showing
     
@@ -79,11 +79,48 @@ class ClickSelectionCollectionViewController: UICollectionViewController, UIColl
         self.collectionView!.register(ClickSelectionCollectionViewCell.self, forCellWithReuseIdentifier: reuseIdentifier)
     }
     
+    
+    
+    
+    
+    
+    convenience init(withIndexButtonSelected buttonSelectedIndex : Int, withContainer container : UIView) {
+        self.init(withContainer: container)
+        
+        //Call the function to scroll in the position of the selected item
+        scrollCollectionView(toButton: buttonSelectedIndex, animated: false)
+    }
+    
+    private init(withContainer container : UIView) {
+        self.container = container
+        
+        let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
+        layout.sectionInset = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
+        layout.itemSize = CollectionViewCellSize
+        layout.minimumLineSpacing = 16
+        layout.scrollDirection = .horizontal
+        
+        super.init(collectionViewLayout: layout)
+        
+        collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        collectionView.showsHorizontalScrollIndicator = false
+        self.collectionView.backgroundColor = .none
+        collectionView.alwaysBounceHorizontal = true
+        
+        // Register cell classes
+        self.collectionView!.register(ClickSelectionCollectionViewCell.self, forCellWithReuseIdentifier: reuseIdentifier)
+    }
+    
+    
+    
+    
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
     @objc private func switchValueChanged(){
+        guard let switchController = switchController else { return }
+
         if switchController.isOn{
             enableCollectionView(animation: collectionViewEnablingAnimation)
             if let del = delegate{
@@ -155,10 +192,10 @@ class ClickSelectionCollectionViewController: UICollectionViewController, UIColl
     public func disableAllContainer(animation : Bool){
         switch self.collectionViewStatus {
         case .showing:
-            switchController.isEnabled = false
+            if let switchController = switchController { switchController.isEnabled = false }
             disableCollectionView(animation: animation)
         case .middleHiding:
-            switchController.isEnabled = false
+            if let switchController = switchController { switchController.isEnabled = false }
         case .hiding:
             return
         }
@@ -169,17 +206,17 @@ class ClickSelectionCollectionViewController: UICollectionViewController, UIColl
     public func enableAllContainer(animation : Bool){
         if collectionViewStatus != .showing {
             
-            if switchController.isOn {
+            if let switchController = switchController, switchController.isOn {
                 UIView.animate(withDuration: animation == true ? 0.2 : 0, animations: {
                     self.hideView.alpha = 0
-                    self.switchController.isEnabled = true
+                    switchController.isEnabled = true
                 }) { (flag) in
                     self.hideView.removeFromSuperview()
                     self.collectionViewStatus = .showing
                 }
             }else{
                 UIView.animate(withDuration: animation == true ? 0.2 : 0, animations: {
-                    self.switchController.isEnabled = true
+                    if let switchController = self.switchController { switchController.isEnabled = true }
                 }) { (flag) in
                     self.collectionViewStatus = .middleHiding
                 }
@@ -190,7 +227,8 @@ class ClickSelectionCollectionViewController: UICollectionViewController, UIColl
     public func disableCollectionView(animation : Bool){
         
         if collectionViewStatus == .showing {
-            container.insertSubview(hideView, belowSubview: switchController)
+            if let switchController = switchController { container.insertSubview(hideView, belowSubview: switchController) }
+            else{ container.insertSubview(hideView,at: container.subviews.endIndex - 1) }
             
             hideView.translatesAutoresizingMaskIntoConstraints = false
             hideView.topAnchor.constraint(equalTo: container.topAnchor, constant: 0).isActive = true

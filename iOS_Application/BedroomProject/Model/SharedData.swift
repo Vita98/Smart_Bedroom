@@ -18,6 +18,12 @@ public enum StairDirection : String{
     case Backwards = "0"
 }
 
+public enum MovementSensorStatus : Int{
+    case ENABLED = 0
+    case DISABLED = 1
+    case AUTO = 2
+}
+
 var appColorTheme : ColorTheme = .Dark
 
 
@@ -34,7 +40,7 @@ var isWallButtonEnabled = true
 
 var isSingleClickWallEnabled = true
 var isLongClickWallEnabled = true
-var isMovementSensorClickEnabled = true
+var movementSensorStatus : MovementSensorStatus = .DISABLED
 
 
 
