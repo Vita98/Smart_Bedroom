@@ -55,7 +55,7 @@ class MovementSensor
     void setHoursType(HoursType hoursType);
     HoursType getHoursType();
 
-    //Movement detecter
+    // Movement detecter
     bool detectMovement();
   private:
 
@@ -63,7 +63,7 @@ class MovementSensor
     typedef int ButtonID;
 
     int _connectionPin; //Variable in which to store the pin where the movement sensor is attached
-    bool _isMovementDetected = false; //Is true when a movement is detected, false otherwise
+    bool _isMovementDetected = false; //It is true when a movement is detected, false otherwise
     MovementSensorStatus _status = AUTO;  //Variables indicating the status of the movement sensor
     HoursType _hoursType = LIGHT; //Variables indicating the actual hours type
     ButtonID _effect; //Effect code to send when a movement is detected
