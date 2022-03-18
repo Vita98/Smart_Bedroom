@@ -183,7 +183,10 @@ void setup() {
   //Setting the motor for the stair manager
   stairManager.setMotor(MOTOR_DIRECTION_PIN,MOTOR_CONNECTION_PIN,STAIR_RELE_PIN);
 
-  delay(2000);
+  //Aligning the real lights status
+  startUpLightsAlignment();
+
+  delay(1000);
 }
 
 void loop() {
@@ -289,6 +292,26 @@ void loop() {
   //Callling the method for the managemet of the wall button
   if (wallButton.isWallButtonEnabled() == true && stairManager.getStairAck() == false && stairManager.getStairAckWifi() == false) wallButtonManager();
     
+}
+
+
+
+
+// Method that manage the light alignment after the start up
+void startUpLightsAlignment(){
+  //turning on if off
+  sendIRMessage(RAW_BUTTON_CODE[ON]);
+  delay(200);
+
+  //Sending the default effect
+  sendIRMessage(RAW_BUTTON_CODE[lightButtonSelected]);
+  delay(200);
+
+  //Turnign off
+  sendIRMessage(RAW_BUTTON_CODE[OFF]);
+  isLightOn = false;
+
+  delay(500);
 }
 
 // Method that manage everything about the movement sensor
