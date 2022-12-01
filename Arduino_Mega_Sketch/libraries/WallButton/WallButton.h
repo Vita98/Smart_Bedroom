@@ -7,6 +7,8 @@
 #include "Arduino.h"
 #include "Payloads.h"
 
+#define OFF_PRESSION_LENGHT_THRESHOLD 20
+
 
 /*
   Main class used to manage the wall button
@@ -42,9 +44,13 @@ class WallButton
     void setLongPressionEffect(int newEffect);
     int getLongPressionEffect();
 
-    /* Method to manage the wall button pression event */
+    /* Methods to manage the wall button pression event */
     int readWallButtonPression();
     bool isPressionEnded();
+
+    /* Specific methods used to manage when the wall button is pressed to turn off the lights */
+    void offPressionTriggered();
+    bool isDistantFromLastOff();
 
   private:
     typedef int ButtonID; //Type used to identify a button id
@@ -58,8 +64,11 @@ class WallButton
     int _numberOfPression = 0;  // Variable used to identify the single Wall click from the long pression
     int pressionEnded = true; // It is true if the pression of the wall button ended.
 
-    bool _isWallButtonEnabled = true; // Variables used to identify the wall button status.
+    bool _isWallButtonEnabled = true; // Variable used to identify the wall button status.
     int _connectionPin; //Variable in which to store the pin where the wall button is attached.
+
+    int offPressionCounter = 0; // Variable used to count the cycle after the wall button is pressed - it is reset after is reached OFF_PRESSION_LENGHT_THRESHOLD value
+    bool offTriggered = false; // Variable used to check if the wall button has been triggered in the last OFF_PRESSION_LENGHT_THRESHOLD cycle
 };
 
 #endif

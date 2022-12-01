@@ -31,10 +31,24 @@
 
 
 
-
 #include "ESP8266WiFi.h"
 #include <HttpRequestJson.h>
 #include <Times.h>
+
+
+
+// All debug macro
+#ifdef DEBUG_ESP_HTTP_CLIENT
+#define DEBUG_HTTP_CLIENT(...) DEBUG_ESP_PORT.printf( __VA_ARGS__ )
+#else
+#define DEBUG_HTTP_CLIENT(...)
+#endif
+
+#ifdef DEBUG_ESP_WIFI
+#define DEBUG_HTTP_WIFI(...) DEBUG_ESP_PORT.printf( __VA_ARGS__ )
+#else
+#define DEBUG_HTTP_WIFI(...)
+#endif
 
 
 //Wifi logIn information
@@ -62,11 +76,14 @@ const int connectionTimeout = 5000;
 String lat = "41.010563";
 String lng = "17.005021";
 String sunriseSunsetApiLink = "http://api.sunrise-sunset.org/json?lat="+lat+"&lng="+lng+"&formatted=0";
+//String sunriseSunsetApiLink = "http://www.google.it:";
 
 //Link to the rest api to get the time in UTC
 String timeApiLink = "http://worldtimeapi.org/api/timezone/Etc/UTC";
 
 const int API_REQUEST_DELAY = 300000; //300k 5 min
+const int API_REQUEST_DELAY_FAILURE = 5000; //5 seconds
+bool failureOnLastRequest = false;
 int lastRequest = 0;
 HttpRequestJson httpRequestJson;
 
@@ -86,12 +103,12 @@ void setup() {
 
   /*Since the connection with tha WIFI can take a couple of seconds,
     it's used a loop for check when the connectiuon is completed     */
-  while( WiFi.status() != WL_CONNECTED) { Serial.println("Connection not enstrablished yet!");delay(1000); }
+  while( WiFi.status() != WL_CONNECTED) { DEBUG_HTTP_WIFI("Connection not enstrablished yet!\n");delay(1000); }
 
   //At this point the ESP8266 module is correctly connected to the WIFI
-  Serial.println("Connection established!");  
-  Serial.print("IP address:\t");
-  Serial.println(WiFi.localIP());
+  DEBUG_HTTP_WIFI("Connection established!\n");  
+  DEBUG_HTTP_WIFI("IP address:\t");
+  DEBUG_HTTP_WIFI(WiFi.localIP().toString().c_str());
 
   //Inizializing the server
   wifiServer.begin();
@@ -177,7 +194,7 @@ void loop() {
     Serial.print(ConnectionOPCode[1]);
   }
 
-  manageSunriseSunsetRequests();
+  manageSunriseSunsetRequests(client);
 }
 
 
@@ -188,24 +205,30 @@ void loop() {
  * ALL THE FUNCTION WITH THE API REQUEST FOR THE MOVEMENT SENSOR
  */
 
-void manageSunriseSunsetRequests(){
+void manageSunriseSunsetRequests(WiFiClient client){
 
-  if(lastRequest != 0  && (millis() - lastRequest) < API_REQUEST_DELAY) return;
+  if(!failureOnLastRequest){
+    if(lastRequest != 0  && (millis() - lastRequest) < API_REQUEST_DELAY) return;
+  }else{
+    if(lastRequest != 0  && (millis() - lastRequest) < API_REQUEST_DELAY_FAILURE) return;
+  }
 
   //Actual Time
   Times actualTime;
-  if(!getActualTimeFromApi(actualTime)){
-    Serial.println("Someting went wrong during the download of the current time from the API!");
+  if(!getActualTimeFromApi(actualTime,client)){
+    DEBUG_HTTP_CLIENT("Someting went wrong during the download of the current time from the API!");
     lastRequest = millis();
+    failureOnLastRequest = true;
     return;
   }
 
   //Sunrise and sunset
   Times sunrise;
   Times sunset;
-  if( !getSunriseSunsetFromApi(sunrise,sunset) ){
-    Serial.println("Someting went wrong during the download of the sunrise and sunset times from the API!");
+  if( !getSunriseSunsetFromApi(sunrise,sunset,client) ){
+    DEBUG_HTTP_CLIENT("Someting went wrong during the download of the sunrise and sunset times from the API!");
     lastRequest = millis();
+    failureOnLastRequest = true;
     return;
   }
 
@@ -216,11 +239,12 @@ void manageSunriseSunsetRequests(){
   Serial.print(msgToSend);
   
   lastRequest = millis();
+  failureOnLastRequest = false;
 }
 
-bool getActualTimeFromApi(Times& actualTime){
+bool getActualTimeFromApi(Times& actualTime,WiFiClient client){
   StaticJsonDocument<768> doc;
-  bool request = httpRequestJson.getRequest(timeApiLink,doc);
+  bool request = httpRequestJson.getRequest(timeApiLink,doc,client);
 
   if(request){
     const char* currentDateTime = doc["datetime"];
@@ -229,9 +253,9 @@ bool getActualTimeFromApi(Times& actualTime){
   return request;
 }
 
-bool getSunriseSunsetFromApi(Times& sunrise, Times& sunset){
+bool getSunriseSunsetFromApi(Times& sunrise, Times& sunset,WiFiClient client){
   StaticJsonDocument<768> doc;
-  bool request = httpRequestJson.getRequest(sunriseSunsetApiLink,doc);
+  bool request = httpRequestJson.getRequest(sunriseSunsetApiLink,doc,client);
 
   if(request){
     String statu = doc["status"];

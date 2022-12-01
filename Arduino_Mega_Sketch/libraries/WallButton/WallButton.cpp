@@ -166,6 +166,14 @@ int WallButton::getLongPressionEffect(){
 	Return: the wall button pression number.
 */
 int WallButton::readWallButtonPression(){
+	if (offTriggered == true){
+		if (offPressionCounter < OFF_PRESSION_LENGHT_THRESHOLD) offPressionCounter++;
+		else{
+			offTriggered = false;
+			offPressionCounter = 0;
+		}
+	}
+
 	if (digitalRead(_connectionPin) == HIGH){
 		_numberOfPression++;
 	    Serial.println("Wall Button pressed!");
@@ -181,6 +189,25 @@ int WallButton::readWallButtonPression(){
 			return returnValue;
 		}else return 0;
 	}
+}
+
+/*
+	Method to be called when the wall button is pressed ONLY to turn off
+	all the lights.
+
+*/
+void WallButton::offPressionTriggered(){
+	offTriggered = true;
+	offPressionCounter = 0;
+}
+
+/*
+	Method used to check if last OFF pression is OFF_PRESSION_LENGHT_THRESHOLD cycles away.
+
+	Return: true if the last OFF pression is OFF_PRESSION_LENGHT_THRESHOLD cycle away, false otherwise.
+*/
+bool WallButton::isDistantFromLastOff(){
+	return !offTriggered;
 }
 
 /*

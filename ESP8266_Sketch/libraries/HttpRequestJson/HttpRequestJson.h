@@ -9,6 +9,7 @@
 
 #include "Arduino.h"
 #include "ArduinoJson.h"
+#include <WiFiClient.h>
 
 
 class HttpRequestJson
@@ -16,7 +17,7 @@ class HttpRequestJson
   public:
     HttpRequestJson();
 
-    bool getRequest(String url, JsonDocument& docBuffer);
+    bool getRequest(String url, JsonDocument& docBuffer, WiFiClient client);
   private:
 };
 

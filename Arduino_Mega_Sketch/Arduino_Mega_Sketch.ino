@@ -284,7 +284,7 @@ void loop() {
   // Calling the method for the management of the movement sensor
   // only when the status is ENABLE or is AUTO and the actual hour is a dark hour.
   MovementSensorStatus msStatus = movementSensor.getStatus();
-  if(msStatus == ENABLED || ( msStatus == AUTO && movementSensor.getHoursType() == DARK ) ) movementSensorManagement();
+  if((msStatus == ENABLED && wallButton.isDistantFromLastOff() == true) || ( msStatus == AUTO && movementSensor.getHoursType() == DARK && wallButton.isDistantFromLastOff() == true) ) movementSensorManagement();
 
   //Calling the method for the management of the stairs button
   stairManager.runStairManager();
@@ -337,7 +337,13 @@ void wallButtonManager(){
     
     if(wallButton.isSingleClickEnabled() && (numberOfPression > 0 && numberOfPression <= WALL_BUTTON_SINGLE_CLICK_DELAY)){
       //Single click
-      if (isLightOn == true) sendIRMessage(RAW_BUTTON_CODE[OFF]);
+      if (isLightOn == true){
+        sendIRMessage(RAW_BUTTON_CODE[OFF]);
+
+        /* We have to disable the movement sensor for at least one second
+           because otherwise the movement sensor will cause the light to turn back on*/
+        wallButton.offPressionTriggered();
+      }
       else{
         //Send first the command associated and then the ON command
         sendIRMessage(RAW_BUTTON_CODE[ON]);
