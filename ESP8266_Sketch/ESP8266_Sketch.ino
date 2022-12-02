@@ -45,9 +45,9 @@
 #endif
 
 #ifdef DEBUG_ESP_WIFI
-#define DEBUG_HTTP_WIFI(...) DEBUG_ESP_PORT.printf( __VA_ARGS__ )
+#define DEBUG_WIFI(...) DEBUG_ESP_PORT.printf( __VA_ARGS__ )
 #else
-#define DEBUG_HTTP_WIFI(...)
+#define DEBUG_WIFI(...)
 #endif
 
 
@@ -103,12 +103,12 @@ void setup() {
 
   /*Since the connection with tha WIFI can take a couple of seconds,
     it's used a loop for check when the connectiuon is completed     */
-  while( WiFi.status() != WL_CONNECTED) { DEBUG_HTTP_WIFI("Connection not enstrablished yet!\n");delay(1000); }
+  while( WiFi.status() != WL_CONNECTED) { DEBUG_WIFI("Connection not enstrablished yet!\n");delay(1000); }
 
   //At this point the ESP8266 module is correctly connected to the WIFI
-  DEBUG_HTTP_WIFI("Connection established!\n");  
-  DEBUG_HTTP_WIFI("IP address:\t");
-  DEBUG_HTTP_WIFI(WiFi.localIP().toString().c_str());
+  DEBUG_WIFI("Connection established!\n");  
+  DEBUG_WIFI("IP address:\t");
+  DEBUG_WIFI(WiFi.localIP().toString().c_str());
 
   //Inizializing the server
   wifiServer.begin();
