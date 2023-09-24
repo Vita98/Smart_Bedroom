@@ -98,6 +98,7 @@ void setup() {
   delay(1000);
 
   //Inizializing the connection with the WIFI
+  WiFi.setPhyMode(WIFI_PHY_MODE_11G);
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid,psw);
 
